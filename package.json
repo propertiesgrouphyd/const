@@ -1,0 +1,17 @@
+{
+  "name": "constitution-365",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Constitution 365 — A Telugu-first 365-day Indian Constitution education platform by Vidhwaan.",
+  "main": "scripts/generate-day.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-day.js",
+    "validate-source-map": "node scripts/source-map.js --validate",
+    "validate-day": "node scripts/validate-day.js",
+    "quality-check": "node scripts/quality-check.js"
+  }
+}
