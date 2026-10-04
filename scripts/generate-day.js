@@ -4,22 +4,23 @@
  * CONSTITUTION 365
  * Daily Lesson Generator
  *
- * Flow:
+ * Pipeline:
  *
  * syllabus.json
- *      ↓
+ *       ↓
  * constitutional-sources.json
- *      ↓
+ *       ↓
+ * source-map.js
+ *       ↓
  * prompt-builder.js
- *      ↓
+ *       ↓
  * Groq
- *      ↓
+ *       ↓
  * validate-day.js
- *      ↓
+ *       ↓
  * quality-check.js
- *      ↓
+ *       ↓
  * PASS → data/day-XXX.json
- * FAIL → regenerate
  *
  * Usage:
  *
@@ -32,8 +33,8 @@
  * Environment:
  *
  *   GROQ_API_KEY=...
- *   GROQ_MODEL=...           optional
- *   MAX_GENERATION_ATTEMPTS=5 optional
+ *   GROQ_MODEL=...
+ *   MAX_GENERATION_ATTEMPTS=5
  */
 
 const fs = require("fs");
@@ -55,6 +56,12 @@ const {
   checkQuality
 } = require("./quality-check");
 
+const {
+  loadSourceMap,
+  getNormalizedDaySource,
+  validateSourceMap
+} = require("./source-map");
+
 
 /*
  * ------------------------------------------------------------
@@ -72,12 +79,6 @@ const SYLLABUS_PATH =
   path.join(
     DATA_DIR,
     "syllabus.json"
-  );
-
-const SOURCE_MAP_PATH =
-  path.join(
-    DATA_DIR,
-    "constitutional-sources.json"
   );
 
 
@@ -104,7 +105,7 @@ const FORCE =
 
 /*
  * ------------------------------------------------------------
- * FILE HELPERS
+ * BASIC HELPERS
  * ------------------------------------------------------------
  */
 
@@ -156,7 +157,7 @@ function writeJson(
 
 /*
  * ------------------------------------------------------------
- * SYLLABUS HELPERS
+ * SYLLABUS
  * ------------------------------------------------------------
  */
 
@@ -196,41 +197,126 @@ function getSyllabusEntry(
 }
 
 
-/*
- * ------------------------------------------------------------
- * SOURCE MAP HELPERS
- * ------------------------------------------------------------
- */
-
-function getSourceDay(
-  sourceMap,
-  day
+function validateSyllabus(
+  syllabus
 ) {
-  if (
-    !sourceMap ||
-    typeof sourceMap !== "object"
-  ) {
-    return null;
+  const errors = [];
+
+  let entries;
+
+  try {
+    entries =
+      getSyllabusEntries(
+        syllabus
+      );
+  } catch (error) {
+    return {
+      valid: false,
+      errors: [
+        error.message
+      ]
+    };
   }
 
   if (
-    sourceMap.days &&
-    typeof sourceMap.days === "object"
+    entries.length !== 365
   ) {
-    return (
-      sourceMap.days[String(day)] ||
-      sourceMap.days[day] ||
-      null
+    errors.push(
+      `Syllabus must contain exactly 365 days; found ${entries.length}.`
     );
   }
 
-  return null;
+  const seen =
+    new Set();
+
+  for (
+    const entry of entries
+  ) {
+    if (
+      !entry ||
+      typeof entry !== "object"
+    ) {
+      errors.push(
+        "Syllabus contains an invalid entry."
+      );
+
+      continue;
+    }
+
+    const day =
+      Number(entry.day);
+
+    if (
+      !Number.isInteger(day) ||
+      day < MIN_DAY ||
+      day > MAX_DAY
+    ) {
+      errors.push(
+        `Invalid syllabus day: ${entry.day}`
+      );
+
+      continue;
+    }
+
+    if (seen.has(day)) {
+      errors.push(
+        `Duplicate syllabus day: ${day}`
+      );
+    }
+
+    seen.add(day);
+
+    if (
+      typeof entry.title !== "string" ||
+      !entry.title.trim()
+    ) {
+      errors.push(
+        `Day ${day}: missing title.`
+      );
+    }
+
+    if (
+      typeof entry.stage !== "string" ||
+      !entry.stage.trim()
+    ) {
+      errors.push(
+        `Day ${day}: missing stage.`
+      );
+    }
+
+    if (
+      typeof entry.focus !== "string" ||
+      !entry.focus.trim()
+    ) {
+      errors.push(
+        `Day ${day}: missing focus.`
+      );
+    }
+  }
+
+  for (
+    let day = MIN_DAY;
+    day <= MAX_DAY;
+    day++
+  ) {
+    if (!seen.has(day)) {
+      errors.push(
+        `Missing syllabus day: ${day}`
+      );
+    }
+  }
+
+  return {
+    valid:
+      errors.length === 0,
+    errors
+  };
 }
 
 
 /*
  * ------------------------------------------------------------
- * DAY VALIDATION
+ * DAY ARGUMENT
  * ------------------------------------------------------------
  */
 
@@ -286,7 +372,7 @@ function getDayFilePath(day) {
 
 /*
  * ------------------------------------------------------------
- * EXISTING FILE CHECK
+ * EXISTING FILE
  * ------------------------------------------------------------
  */
 
@@ -307,60 +393,177 @@ function shouldSkipExistingFile(
 
 /*
  * ------------------------------------------------------------
- * GENERATION CONTEXT
+ * SOURCE MAP INTEGRITY
  * ------------------------------------------------------------
  */
 
-function buildGenerationContext({
-  syllabusEntry,
-  sourceDay,
-  previousResult,
-  attempt
-}) {
-  const context = {
-    syllabus: syllabusEntry,
-    sourceMap: sourceDay
-  };
+function verifySourceForDay(
+  sourceMap,
+  day
+) {
+  const source =
+    getNormalizedDaySource(
+      sourceMap,
+      day
+    );
 
-  /*
-   * If a previous generation failed validation,
-   * give Groq the failure information so that the
-   * next attempt can correct the specific problems.
-   */
-
-  if (previousResult) {
-    context.previousAttempt = {
-      attempt,
-      validation_errors:
-        previousResult.validation
-          ? previousResult.validation.errors
-          : [],
-      validation_warnings:
-        previousResult.validation
-          ? previousResult.validation.warnings
-          : [],
-      quality_errors:
-        previousResult.quality
-          ? previousResult.quality.errors
-          : [],
-      quality_warnings:
-        previousResult.quality
-          ? previousResult.quality.warnings
-          : [],
-      quality_score:
-        previousResult.quality
-          ? previousResult.quality.score
-          : null
-    };
+  if (
+    !source ||
+    typeof source !== "object"
+  ) {
+    throw new Error(
+      `No usable constitutional source found for day ${day}.`
+    );
   }
 
-  return context;
+  /*
+   * At least one constitutional anchor should normally
+   * exist. Some conceptual lessons can legitimately rely
+   * primarily on references/notes.
+   */
+
+  const hasArticles =
+    Array.isArray(source.articles) &&
+    source.articles.length > 0;
+
+  const hasParts =
+    Array.isArray(source.parts) &&
+    source.parts.length > 0;
+
+  const hasReferences =
+    Array.isArray(source.references) &&
+    source.references.length > 0;
+
+  if (
+    !hasArticles &&
+    !hasParts &&
+    !hasReferences
+  ) {
+    throw new Error(
+      `Day ${day} has no constitutional articles, parts or references in the source map.`
+    );
+  }
+
+  return source;
 }
 
 
 /*
  * ------------------------------------------------------------
- * PROMPT WITH RETRY FEEDBACK
+ * NORMALIZE MODEL OUTPUT
+ * ------------------------------------------------------------
+ *
+ * The syllabus is authoritative for:
+ * - day
+ * - title
+ * - stage
+ *
+ * The model must not accidentally change these.
+ */
+
+function normalizeGeneratedLesson(
+  generated,
+  syllabusEntry
+) {
+  if (
+    !generated ||
+    typeof generated !== "object" ||
+    Array.isArray(generated)
+  ) {
+    throw new Error(
+      "Groq returned an invalid lesson object."
+    );
+  }
+
+  return {
+    ...generated,
+
+    day:
+      Number(syllabusEntry.day),
+
+    title:
+      syllabusEntry.title,
+
+    stage:
+      syllabusEntry.stage
+  };
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * RETRY FEEDBACK
+ * ------------------------------------------------------------
+ */
+
+function buildRetryFeedback(
+  result,
+  attempt
+) {
+  const validation =
+    result.validation || {};
+
+  const quality =
+    result.quality || {};
+
+  const errors = [
+    ...(validation.errors || []),
+    ...(quality.errors || [])
+  ];
+
+  const warnings = [
+    ...(validation.warnings || []),
+    ...(quality.warnings || [])
+  ];
+
+  return `
+REGENERATION ATTEMPT: ${attempt}
+
+The previous lesson failed one or more local quality gates.
+
+You must correct the problems below in the new lesson.
+
+HARD ERRORS:
+${
+  errors.length
+    ? errors
+        .map(
+          item =>
+            `- ${item}`
+        )
+        .join("\n")
+    : "- None"
+}
+
+WARNINGS:
+${
+  warnings.length
+    ? warnings
+        .map(
+          item =>
+            `- ${item}`
+        )
+        .join("\n")
+    : "- None"
+}
+
+PREVIOUS QUALITY SCORE:
+${
+  typeof quality.score === "number"
+    ? quality.score
+    : "Not available"
+}
+
+Do not discuss these corrections.
+Do not output commentary.
+Return ONLY the corrected JSON object.
+`;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * PROMPT
  * ------------------------------------------------------------
  */
 
@@ -380,93 +583,20 @@ function buildGenerationPrompt({
     return basePrompt;
   }
 
-  const validation =
-    previousResult.validation || {};
-
-  const quality =
-    previousResult.quality || {};
-
-  const errors = [
-    ...(validation.errors || []),
-    ...(quality.errors || [])
-  ];
-
-  const warnings = [
-    ...(validation.warnings || []),
-    ...(quality.warnings || [])
-  ];
-
-  const feedback = `
-REGENERATION ATTEMPT: ${attempt}
-
-The previous generated lesson failed the local quality gates.
-
-You MUST correct these problems in the new JSON.
-
-ERRORS:
-${errors.length
-  ? errors.map(item => `- ${item}`).join("\n")
-  : "- None"}
-
-WARNINGS:
-${warnings.length
-  ? warnings.map(item => `- ${item}`).join("\n")
-  : "- None"}
-
-PREVIOUS QUALITY SCORE:
-${quality.score ?? "Not available"}
-
-Do not explain the corrections.
-Return ONLY the corrected final JSON object.
-`;
-
-  return `${basePrompt}\n\n${feedback}`;
+  return (
+    basePrompt +
+    "\n\n" +
+    buildRetryFeedback(
+      previousResult,
+      attempt
+    )
+  );
 }
 
 
 /*
  * ------------------------------------------------------------
- * NORMALIZE GENERATED RESULT
- * ------------------------------------------------------------
- */
-
-function normalizeGeneratedLesson(
-  generated,
-  syllabusEntry
-) {
-  if (
-    !generated ||
-    typeof generated !== "object"
-  ) {
-    throw new Error(
-      "Groq returned an invalid lesson object."
-    );
-  }
-
-  /*
-   * Keep the authoritative day/title/stage
-   * from syllabus rather than trusting the model
-   * to reproduce them exactly.
-   */
-
-  return {
-    ...generated,
-
-    day:
-      Number(syllabusEntry.day),
-
-    title:
-      syllabusEntry.title,
-
-    stage:
-      syllabusEntry.stage
-  };
-}
-
-
-/*
- * ------------------------------------------------------------
- * SINGLE GENERATION ATTEMPT
+ * SINGLE ATTEMPT
  * ------------------------------------------------------------
  */
 
@@ -477,7 +607,7 @@ async function generateAttempt({
   attempt
 }) {
   console.log(
-    `\n------------------------------------------`
+    "\n------------------------------------------"
   );
 
   console.log(
@@ -493,7 +623,7 @@ async function generateAttempt({
   );
 
   console.log(
-    `------------------------------------------`
+    "------------------------------------------"
   );
 
   const prompt =
@@ -525,7 +655,7 @@ async function generateAttempt({
 
   /*
    * --------------------------------------------------------
-   * STRUCTURAL / CONSTITUTIONAL VALIDATION
+   * STRUCTURAL + CONSTITUTIONAL VALIDATION
    * --------------------------------------------------------
    */
 
@@ -542,7 +672,7 @@ async function generateAttempt({
 
   /*
    * --------------------------------------------------------
-   * EDITORIAL QUALITY VALIDATION
+   * EDITORIAL QUALITY
    * --------------------------------------------------------
    */
 
@@ -582,12 +712,31 @@ async function generateAttempt({
     `Quality score: ${quality.score}/100`
   );
 
+  return result;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * PRINT FAILURE DETAILS
+ * ------------------------------------------------------------
+ */
+
+function printFailure(
+  result
+) {
+  const validation =
+    result.validation || {};
+
+  const quality =
+    result.quality || {};
+
   if (
     validation.errors &&
     validation.errors.length
   ) {
     console.log(
-      "\nValidation errors:"
+      "\nSTRUCTURAL / REFERENCE ERRORS:"
     );
 
     for (
@@ -604,7 +753,7 @@ async function generateAttempt({
     quality.errors.length
   ) {
     console.log(
-      "\nQuality errors:"
+      "\nEDITORIAL QUALITY ERRORS:"
     );
 
     for (
@@ -621,7 +770,7 @@ async function generateAttempt({
     validation.warnings.length
   ) {
     console.log(
-      "\nValidation warnings:"
+      "\nVALIDATION WARNINGS:"
     );
 
     for (
@@ -638,7 +787,7 @@ async function generateAttempt({
     quality.warnings.length
   ) {
     console.log(
-      "\nQuality warnings:"
+      "\nQUALITY WARNINGS:"
     );
 
     for (
@@ -649,14 +798,12 @@ async function generateAttempt({
       );
     }
   }
-
-  return result;
 }
 
 
 /*
  * ------------------------------------------------------------
- * MAIN GENERATION PROCESS
+ * MAIN GENERATION
  * ------------------------------------------------------------
  */
 
@@ -679,7 +826,7 @@ async function generateDay(day) {
 
   /*
    * --------------------------------------------------------
-   * LOAD SOURCE FILES
+   * LOAD SYLLABUS
    * --------------------------------------------------------
    */
 
@@ -692,14 +839,38 @@ async function generateDay(day) {
       SYLLABUS_PATH
     );
 
+  /*
+   * --------------------------------------------------------
+   * VALIDATE COMPLETE SYLLABUS
+   * --------------------------------------------------------
+   */
+
   console.log(
-    "Loading constitutional source map..."
+    "Checking 365-day syllabus integrity..."
   );
 
-  const sourceMap =
-    readJson(
-      SOURCE_MAP_PATH
+  const syllabusCheck =
+    validateSyllabus(
+      syllabus
     );
+
+  if (
+    !syllabusCheck.valid
+  ) {
+    throw new Error(
+      "Syllabus integrity check failed:\n" +
+      syllabusCheck.errors
+        .map(
+          item =>
+            `- ${item}`
+        )
+        .join("\n")
+    );
+  }
+
+  console.log(
+    "Syllabus integrity: PASS"
+  );
 
   const syllabusEntry =
     getSyllabusEntry(
@@ -713,29 +884,97 @@ async function generateDay(day) {
     );
   }
 
-  const sourceDay =
-    getSourceDay(
-      sourceMap,
-      day
+  /*
+   * --------------------------------------------------------
+   * LOAD + VALIDATE SOURCE MAP
+   * --------------------------------------------------------
+   */
+
+  console.log(
+    "Loading constitutional source map..."
+  );
+
+  const sourceMap =
+    loadSourceMap();
+
+  console.log(
+    "Checking 365-day constitutional source map..."
+  );
+
+  const sourceMapCheck =
+    validateSourceMap(
+      sourceMap
     );
 
-  if (!sourceDay) {
+  if (
+    !sourceMapCheck.valid
+  ) {
     throw new Error(
-      `Day ${day} was not found in constitutional-sources.json.`
+      "Constitutional source-map integrity check failed:\n" +
+      sourceMapCheck.errors
+        .map(
+          item =>
+            `- ${item}`
+        )
+        .join("\n")
     );
   }
 
   console.log(
-    `\nDay ${day}: ${syllabusEntry.title}`
+    "Source-map integrity: PASS"
+  );
+
+  const sourceDay =
+    verifySourceForDay(
+      sourceMap,
+      day
+    );
+
+  /*
+   * --------------------------------------------------------
+   * DISPLAY DAY CONTEXT
+   * --------------------------------------------------------
+   */
+
+  console.log(
+    `\nDAY ${day}`
   );
 
   console.log(
-    `Stage: ${syllabusEntry.stage}`
+    `TITLE: ${syllabusEntry.title}`
+  );
+
+  console.log(
+    `STAGE: ${syllabusEntry.stage}`
+  );
+
+  console.log(
+    `FOCUS: ${syllabusEntry.focus}`
+  );
+
+  console.log(
+    "\nCONSTITUTIONAL SOURCE:"
+  );
+
+  console.log(
+    `Parts: ${
+      sourceDay.parts.length
+        ? sourceDay.parts.join(", ")
+        : "None specified"
+    }`
+  );
+
+  console.log(
+    `Articles: ${
+      sourceDay.articles.length
+        ? sourceDay.articles.join(", ")
+        : "None specified"
+    }`
   );
 
   /*
    * --------------------------------------------------------
-   * CHECK EXISTING OUTPUT
+   * OUTPUT
    * --------------------------------------------------------
    */
 
@@ -789,10 +1028,6 @@ async function generateDay(day) {
           attempt
         });
 
-      /*
-       * Both gates must pass.
-       */
-
       const structuralPass =
         Boolean(
           result.validation &&
@@ -804,6 +1039,10 @@ async function generateDay(day) {
           result.quality &&
           result.quality.valid
         );
+
+      /*
+       * BOTH gates must pass.
+       */
 
       if (
         structuralPass &&
@@ -830,7 +1069,7 @@ async function generateDay(day) {
         );
 
         /*
-         * Write only after BOTH gates pass.
+         * Only accepted lessons are written.
          */
 
         writeJson(
@@ -856,14 +1095,15 @@ async function generateDay(day) {
       }
 
       /*
-       * Failed attempt.
-       *
-       * Save the complete result in memory so
-       * the next prompt can contain precise feedback.
+       * Failed generation.
        */
 
       previousResult =
         result;
+
+      printFailure(
+        result
+      );
 
       if (
         attempt <
@@ -880,20 +1120,23 @@ async function generateDay(day) {
 
     } catch (error) {
       console.error(
-        `\nAttempt ${attempt} error: ${error.message}`
+        `\nAttempt ${attempt} failed: ${error.message}`
       );
 
       previousResult = {
         validation: {
+          valid: false,
           errors: [
             `Generation error: ${error.message}`
           ],
           warnings: []
         },
+
         quality: {
+          valid: false,
+          score: 0,
           errors: [],
-          warnings: [],
-          score: 0
+          warnings: []
         }
       };
 
@@ -908,14 +1151,8 @@ async function generateDay(day) {
     }
   }
 
-  /*
-   * --------------------------------------------------------
-   * ALL ATTEMPTS FAILED
-   * --------------------------------------------------------
-   */
-
   throw new Error(
-    `Day ${day} could not pass all quality gates after ${MAX_GENERATION_ATTEMPTS} attempts.`
+    `Day ${day} failed all ${MAX_GENERATION_ATTEMPTS} generation attempts. No lesson file was written.`
   );
 }
 
@@ -938,25 +1175,39 @@ async function main() {
     );
   }
 
-  await generateDay(day);
+  if (
+    !Number.isInteger(
+      MAX_GENERATION_ATTEMPTS
+    ) ||
+    MAX_GENERATION_ATTEMPTS < 1
+  ) {
+    throw new Error(
+      "MAX_GENERATION_ATTEMPTS must be a positive integer."
+    );
+  }
+
+  await generateDay(
+    day
+  );
 }
 
 
 /*
  * ------------------------------------------------------------
- * EXPORT
+ * EXPORTS
  * ------------------------------------------------------------
  */
 
 module.exports = {
   generateDay,
-  getDayFilePath
+  getDayFilePath,
+  validateSyllabus
 };
 
 
 /*
  * ------------------------------------------------------------
- * RUN CLI
+ * CLI ENTRY
  * ------------------------------------------------------------
  */
 
@@ -971,7 +1222,7 @@ if (
     })
     .catch(error => {
       console.error(
-        `\nGENERATION FAILED: ${error.message}`
+        `\nGENERATION FAILED:\n${error.message}`
       );
 
       process.exit(1);
