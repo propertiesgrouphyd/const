@@ -1,0 +1,564 @@
+name: VIDHWAAN STATE GITHUB PAGES DEPLOY
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: vidhwaan-state-github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_NAME: vidhwaan-state
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Production Tools
+        run: |
+          set -euo pipefail
+          npm install -g terser
+          npm install -g javascript-obfuscator
+          npm install -g clean-css-cli
+          npm install -g html-minifier-terser
+          terser --version
+          javascript-obfuscator --version
+          cleancss --version
+          html-minifier-terser --version
+
+      - name: Install Project Dependencies
+        run: |
+          set -euo pipefail
+          npm ci
+
+      - name: Validate State Source
+        run: |
+          set -euo pipefail
+          node --check generator.js
+          node --check app.js
+          node --check sw.js
+          test -f index.html
+          test -f main.css
+          test -f app.js
+          test -f sw.js
+          test -f manifest.json
+          test -f CNAME
+          test -f data/app-config.json
+          test -f data/syllabus.json
+          test -f data/constitutional-sources.json
+          test -f icons/icon-192.png
+          test -f icons/icon-512.png
+          test -f icons/favicon.ico
+          test -f icons/logo.png
+          echo "SOURCE VALIDATION: PASSED"
+
+      - name: Prepare Production Dist
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist/data
+          mkdir -p dist/icons
+          cp index.html dist/index.html
+          cp main.css dist/main.css
+          cp app.js dist/app.js
+          cp sw.js dist/sw.js
+          cp manifest.json dist/manifest.json
+          cp CNAME dist/CNAME
+          cp icons/icon-192.png dist/icons/icon-192.png
+          cp icons/icon-512.png dist/icons/icon-512.png
+          cp icons/favicon.ico dist/icons/favicon.ico
+          cp icons/logo.png dist/icons/logo.png
+
+      - name: Protect State Lesson Data
+        env:
+          STATE_DATA_KEY: ${{ secrets.STATE_DATA_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${STATE_DATA_KEY:-}" ]; then
+            echo "ERROR: STATE_DATA_KEY GitHub secret is missing."
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import crypto from "node:crypto";
+          import zlib from "node:zlib";
+
+          const key=process.env.STATE_DATA_KEY;
+
+          if(!/^[A-Za-z0-9+/]+={0,2}$/.test(key)){
+            throw new Error("STATE_DATA_KEY is not valid Base64.");
+          }
+
+          const keyBytes=Buffer.from(key,"base64");
+
+          if(keyBytes.length!==32){
+            throw new Error(
+              `STATE_DATA_KEY must decode to exactly 32 bytes. Received ${keyBytes.length}.`
+            );
+          }
+
+          const sourceDir="data";
+          const outputDir="dist/data";
+
+          fs.mkdirSync(outputDir,{recursive:true});
+
+          const files=fs.readdirSync(sourceDir)
+            .filter(f=>/^day-\d{3}\.json$/.test(f))
+            .sort();
+
+          if(!files.length){
+            throw new Error("No day-*.json lesson files found.");
+          }
+
+          for(const file of files){
+            const plaintext=fs.readFileSync(`${sourceDir}/${file}`);
+            const compressed=zlib.gzipSync(plaintext,{level:9});
+
+            const iv=crypto.randomBytes(12);
+
+            const cipher=crypto.createCipheriv(
+              "aes-256-gcm",
+              keyBytes,
+              iv
+            );
+
+            const encrypted=Buffer.concat([
+              cipher.update(compressed),
+              cipher.final()
+            ]);
+
+            const tag=cipher.getAuthTag();
+
+            const payload=Buffer.concat([
+              iv,
+              encrypted,
+              tag
+            ]);
+
+            const output=file.replace(/\.json$/,".dat");
+
+            fs.writeFileSync(
+              `${outputDir}/${output}`,
+              payload
+            );
+          }
+
+          console.log(`Protected ${files.length} lesson files.`);
+          NODE
+
+          echo "Lesson data protection: PASSED"
+
+      - name: Copy Static Data
+        run: |
+          set -euo pipefail
+          cp data/app-config.json dist/data/app-config.json
+          cp data/syllabus.json dist/data/syllabus.json
+          cp data/constitutional-sources.json dist/data/constitutional-sources.json
+
+      - name: Remove Plaintext Lesson JSON
+        run: |
+          set -euo pipefail
+          find dist/data -maxdepth 1 -type f -name 'day-*.json' -delete
+
+      - name: Verify Protected Lesson Data
+        run: |
+          set -euo pipefail
+
+          SOURCE_COUNT=$(
+            find data \
+              -maxdepth 1 \
+              -type f \
+              -name 'day-*.json' \
+              | wc -l
+          )
+
+          DAT_COUNT=$(
+            find dist/data \
+              -maxdepth 1 \
+              -type f \
+              -name 'day-*.dat' \
+              | wc -l
+          )
+
+          JSON_COUNT=$(
+            find dist/data \
+              -maxdepth 1 \
+              -type f \
+              -name 'day-*.json' \
+              | wc -l
+          )
+
+          echo "Source lesson JSON files : $SOURCE_COUNT"
+          echo "Protected DAT files      : $DAT_COUNT"
+          echo "Deployed lesson JSON     : $JSON_COUNT"
+
+          if [ "$SOURCE_COUNT" -eq 0 ]; then
+            echo "ERROR: No source lesson JSON files found."
+            exit 1
+          fi
+
+          if [ "$DAT_COUNT" -ne "$SOURCE_COUNT" ]; then
+            echo "ERROR: Lesson protection count mismatch."
+            exit 1
+          fi
+
+          if [ "$JSON_COUNT" -ne 0 ]; then
+            echo "ERROR: Plain lesson JSON files found."
+            exit 1
+          fi
+
+          echo "PROTECTED DATA VERIFICATION: PASSED"
+
+      - name: Inject State Lesson Decryption Key
+        env:
+          STATE_DATA_KEY: ${{ secrets.STATE_DATA_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${STATE_DATA_KEY:-}" ]; then
+            echo "ERROR: STATE_DATA_KEY GitHub secret is missing."
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          const file="dist/app.js";
+          const key=process.env.STATE_DATA_KEY;
+          const placeholder="__STATE_DATA_KEY__";
+
+          const source=fs.readFileSync(file,"utf8");
+          const occurrences=source.split(placeholder).length-1;
+
+          if(occurrences!==1){
+            throw new Error(
+              `Expected exactly one STATE_DATA_KEY placeholder. Found ${occurrences}.`
+            );
+          }
+
+          if(!/^[A-Za-z0-9+/]+={0,2}$/.test(key)){
+            throw new Error("STATE_DATA_KEY is not valid Base64.");
+          }
+
+          const keyBytes=Buffer.from(key,"base64");
+
+          if(keyBytes.length!==32){
+            throw new Error(
+              `STATE_DATA_KEY must decode to exactly 32 bytes. Received ${keyBytes.length}.`
+            );
+          }
+
+          const updated=source.replace(
+            `"${placeholder}"`,
+            JSON.stringify(key)
+          );
+
+          if(updated===source){
+            throw new Error("STATE_DATA_KEY placeholder replacement failed.");
+          }
+
+          if(updated.includes(placeholder)){
+            throw new Error(
+              "STATE_DATA_KEY placeholder still exists after injection."
+            );
+          }
+
+          fs.writeFileSync(file,updated,"utf8");
+
+          console.log("STATE_DATA_KEY injected successfully.");
+          NODE
+
+          node --check dist/app.js
+
+      - name: Minify CSS
+        run: |
+          set -euo pipefail
+
+          cleancss \
+            -O2 \
+            dist/main.css \
+            -o dist/main.css
+
+          node <<'NODE'
+          const fs=require("fs");
+          const file="dist/main.css";
+          const source=fs.readFileSync(file,"utf8");
+          fs.writeFileSync(
+            file,
+            source.replace(/\r?\n|\r/g,"").trim(),
+            "utf8"
+          );
+          NODE
+
+      - name: Minify JavaScript
+        run: |
+          set -euo pipefail
+          terser \
+            dist/app.js \
+            --compress \
+            --mangle \
+            -o dist/app.js
+
+      - name: Obfuscate JavaScript
+        run: |
+          set -euo pipefail
+
+          javascript-obfuscator \
+            dist/app.js \
+            --output dist/app.js \
+            --compact true \
+            --control-flow-flattening false \
+            --dead-code-injection false \
+            --debug-protection false \
+            --disable-console-output true \
+            --identifier-names-generator hexadecimal \
+            --rename-globals false \
+            --self-defending false \
+            --string-array true \
+            --string-array-encoding base64 \
+            --string-array-threshold 0.75
+
+      - name: Verify State Decryption Key Injection
+        run: |
+          set -euo pipefail
+
+          if grep -Fq "__STATE_DATA_KEY__" dist/app.js; then
+            echo "ERROR: STATE_DATA_KEY placeholder remains."
+            exit 1
+          fi
+
+          echo "DECRYPTION KEY VERIFICATION: PASSED"
+
+      - name: Minify Service Worker
+        run: |
+          set -euo pipefail
+
+          terser \
+            dist/sw.js \
+            --compress \
+            --mangle \
+            --format comments=false \
+            -o dist/sw.js
+
+      - name: Minify JSON
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs=require("fs");
+
+          const files=[
+            "dist/manifest.json",
+            "dist/data/app-config.json",
+            "dist/data/syllabus.json",
+            "dist/data/constitutional-sources.json"
+          ];
+
+          for(const file of files){
+            const data=JSON.parse(
+              fs.readFileSync(file,"utf8")
+            );
+
+            fs.writeFileSync(
+              file,
+              JSON.stringify(data),
+              "utf8"
+            );
+          }
+          NODE
+
+      - name: Generate Asset Version
+        run: |
+          set -euo pipefail
+          VERSION=$(date +%s)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Apply Asset Cache Busting
+        run: |
+          set -euo pipefail
+
+          sed -i \
+            "s|src=\"./app.js\"|src=\"./app.js?v=$VERSION\"|g" \
+            dist/index.html
+
+          sed -i \
+            "s|href=\"./main.css\"|href=\"./main.css?v=$VERSION\"|g" \
+            dist/index.html
+
+          sed -i \
+            "s|href=\"./manifest.json\"|href=\"./manifest.json?v=$VERSION\"|g" \
+            dist/index.html
+
+      - name: Minify HTML
+        run: |
+          set -euo pipefail
+
+          html-minifier-terser \
+            --collapse-whitespace \
+            --remove-comments \
+            --remove-redundant-attributes \
+            --remove-script-type-attributes \
+            --remove-style-link-type-attributes \
+            --use-short-doctype \
+            --minify-css true \
+            --minify-js true \
+            dist/index.html \
+            -o dist/index.html
+
+          node <<'NODE'
+          const fs=require("fs");
+          const file="dist/index.html";
+          const source=fs.readFileSync(file,"utf8");
+          fs.writeFileSync(
+            file,
+            source.replace(/\r?\n|\r/g,"").trim(),
+            "utf8"
+          );
+          NODE
+
+      - name: Verify HTML And CSS Single Line
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs=require("fs");
+
+          for(const file of [
+            "dist/index.html",
+            "dist/main.css"
+          ]){
+            const data=fs.readFileSync(file);
+
+            for(const byte of data){
+              if(byte===10||byte===13){
+                throw new Error(
+                  `${file} contains newline characters.`
+                );
+              }
+            }
+
+            console.log(`OK: ${file}`);
+          }
+          NODE
+
+      - name: Final Production Verification
+        run: |
+          set -euo pipefail
+
+          test -f dist/index.html
+          test -f dist/manifest.json
+          test -f dist/sw.js
+          test -f dist/app.js
+          test -f dist/main.css
+          test -f dist/CNAME
+          test -f dist/data/app-config.json
+          test -f dist/data/syllabus.json
+          test -f dist/data/constitutional-sources.json
+          test -f dist/icons/icon-192.png
+          test -f dist/icons/icon-512.png
+          test -f dist/icons/favicon.ico
+          test -f dist/icons/logo.png
+
+          SOURCE_COUNT=$(
+            find data \
+              -maxdepth 1 \
+              -type f \
+              -name 'day-*.json' \
+              | wc -l
+          )
+
+          DAT_COUNT=$(
+            find dist/data \
+              -maxdepth 1 \
+              -type f \
+              -name 'day-*.dat' \
+              | wc -l
+          )
+
+          JSON_COUNT=$(
+            find dist \
+              -type f \
+              -name 'day-*.json' \
+              | wc -l
+          )
+
+          if [ "$SOURCE_COUNT" -eq 0 ]; then
+            echo "ERROR: No source lesson files found."
+            exit 1
+          fi
+
+          if [ "$DAT_COUNT" -ne "$SOURCE_COUNT" ]; then
+            echo "ERROR: DAT count mismatch."
+            exit 1
+          fi
+
+          if [ "$JSON_COUNT" -ne 0 ]; then
+            echo "ERROR: Plain lesson JSON found in dist."
+            exit 1
+          fi
+
+          grep -F "./app.js?v=${VERSION}" dist/index.html
+          grep -F "./main.css?v=${VERSION}" dist/index.html
+
+          if grep -Fq "__STATE_DATA_KEY__" dist/app.js; then
+            echo "ERROR: Encryption key placeholder remains."
+            exit 1
+          fi
+
+          HTML_LINES=$(wc -l < dist/index.html)
+          CSS_LINES=$(wc -l < dist/main.css)
+
+          if [ "$HTML_LINES" -ne 0 ]; then
+            echo "ERROR: index.html is not single-line."
+            exit 1
+          fi
+
+          if [ "$CSS_LINES" -ne 0 ]; then
+            echo "ERROR: main.css is not single-line."
+            exit 1
+          fi
+
+          echo "============================================================"
+          echo " VIDHWAAN STATE — PRODUCTION BUILD PASSED"
+          echo "============================================================"
+          echo "Protected lessons : $DAT_COUNT"
+          echo "Plain lessons      : 0"
+          echo "Deployment         : GitHub Pages"
+          echo "============================================================"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Deploy To GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Deployment Success
+        run: |
+          echo "============================================================"
+          echo " VIDHWAAN STATE — GITHUB PAGES DEPLOYMENT SUCCESS"
+          echo "============================================================"
+          echo "Deployment : GitHub Pages"
+          echo "Domain     : state.vidhwaan.com"
+          echo "============================================================"
