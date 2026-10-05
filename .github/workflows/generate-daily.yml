@@ -1,326 +1,105 @@
-name: CONSTITUTION 365 DAILY GENERATION
+name: Constitution 365 Daily Generator
 
 on:
   schedule:
-    # 1:00 AM IST = 7:30 PM UTC
-    - cron: "30 19 * * *"
+    - cron: "30 0 * * *"
 
   workflow_dispatch:
     inputs:
       day:
-        description: "Constitution 365 day number (1-365). Leave empty for automatic day."
+        description: "Day number (1-365). Leave empty for automatic day."
         required: false
         type: string
-
-      force:
-        description: "Force regeneration if the day JSON already exists"
-        required: false
-        default: false
-        type: boolean
-
 
 permissions:
   contents: write
 
-
 jobs:
-
   generate:
-
-    name: Generate Constitution 365 Lesson
-
     runs-on: ubuntu-latest
 
-    env:
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
-      MAX_GENERATION_ATTEMPTS: "5"
-
     steps:
-
-      # ------------------------------------------------------
-      # CHECKOUT
-      # ------------------------------------------------------
-
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-
-      # ------------------------------------------------------
-      # NODE.JS
-      # ------------------------------------------------------
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-
-      # ------------------------------------------------------
-      # VERIFY NODE
-      # ------------------------------------------------------
-
-      - name: Verify Node.js
-        run: |
-          node --version
-          npm --version
-
-
-      # ------------------------------------------------------
-      # VERIFY REQUIRED FILES
-      # ------------------------------------------------------
-
-      - name: Verify Constitution 365 Files
-        shell: bash
-        run: |
-
-          set -e
-
-          REQUIRED_FILES=(
-            "package.json"
-            "data/syllabus.json"
-            "data/constitutional-sources.json"
-            "scripts/generate-day.js"
-            "scripts/prompt-builder.js"
-            "scripts/groq.js"
-            "scripts/validate-day.js"
-            "scripts/quality-check.js"
-            "scripts/source-map.js"
-          )
-
-          for FILE in "${REQUIRED_FILES[@]}"; do
-            if [ ! -f "$FILE" ]; then
-              echo "ERROR: Missing required file: $FILE"
-              exit 1
-            fi
-
-            echo "OK: $FILE"
-          done
-
-
-      # ------------------------------------------------------
-      # VERIFY GROQ SECRET
-      # ------------------------------------------------------
-
-      - name: Verify Groq Secret
-        shell: bash
-        run: |
-
-          if [ -z "${GROQ_API_KEY}" ]; then
-            echo "ERROR: GROQ_API_KEY GitHub Secret is not configured."
-            exit 1
-          fi
-
-          echo "GROQ_API_KEY is available."
-
-
-      # ------------------------------------------------------
-      # INSTALL / VERIFY PROJECT
-      # ------------------------------------------------------
-
-      - name: Install Project
-        run: |
-          npm install --ignore-scripts
-
-
-      # ------------------------------------------------------
-      # VALIDATE COMPLETE SOURCE MAP
-      # ------------------------------------------------------
-
-      - name: Validate Constitutional Source Map
-        run: |
-          npm run validate-source-map
-
-
-      # ------------------------------------------------------
-      # CALCULATE DAY
-      # ------------------------------------------------------
-
-      - name: Determine Constitution 365 Day
+      - name: Determine Day
         id: day
         shell: bash
-        env:
-          MANUAL_DAY: ${{ inputs.day }}
         run: |
-
-          set -e
-
-          START_DATE="2026-08-30"
-
-          if [ -n "$MANUAL_DAY" ]; then
-
-            DAY="$MANUAL_DAY"
-
-            if ! [[ "$DAY" =~ ^[0-9]+$ ]]; then
-              echo "ERROR: Manual day must be a number from 1 to 365."
-              exit 1
-            fi
-
+          if [ -n "${{ inputs.day }}" ]; then
+            DAY="${{ inputs.day }}"
           else
+            START_DATE="2026-08-30"
+            TODAY=$(TZ=Asia/Kolkata date +%Y-%m-%d)
 
-            TODAY_UTC=$(date -u +%Y-%m-%d)
+            START_TS=$(date -d "$START_DATE" +%s)
+            TODAY_TS=$(date -d "$TODAY" +%s)
 
-            START_EPOCH=$(date -u -d "$START_DATE" +%s)
-            TODAY_EPOCH=$(date -u -d "$TODAY_UTC" +%s)
-
-            DIFFERENCE=$(( (TODAY_EPOCH - START_EPOCH) / 86400 ))
-
-            DAY=$(( DIFFERENCE + 1 ))
-
+            DAY=$(( (TODAY_TS - START_TS) / 86400 + 1 ))
           fi
 
           if [ "$DAY" -lt 1 ] || [ "$DAY" -gt 365 ]; then
-            echo "ERROR: Constitution 365 day is outside 1-365."
-            echo "Calculated/selected day: $DAY"
+            echo "Invalid Constitution 365 day: $DAY"
             exit 1
           fi
 
-          echo "Constitution 365 day: $DAY"
-
+          echo "Generating Day $DAY"
           echo "day=$DAY" >> "$GITHUB_OUTPUT"
 
-
-      # ------------------------------------------------------
-      # GENERATE DAILY LESSON
-      # ------------------------------------------------------
-
-      - name: Generate Daily Lesson
-        shell: bash
+      - name: Generate Daily Constitution Content
         env:
           DAY: ${{ steps.day.outputs.day }}
-          FORCE_GENERATION: ${{ inputs.force }}
-        run: |
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: openai/gpt-oss-120b
+        run: node generator.js
 
-          set -e
-
-          echo "Generating Constitution 365 Day ${DAY}"
-
-          if [ "$FORCE_GENERATION" = "true" ]; then
-
-            echo "Force regeneration enabled."
-
-            node scripts/generate-day.js "$DAY" --force
-
-          else
-
-            node scripts/generate-day.js "$DAY"
-
-          fi
-
-
-      # ------------------------------------------------------
-      # VERIFY GENERATED FILE
-      # ------------------------------------------------------
-
-      - name: Verify Generated Lesson
+      - name: Verify Generated JSON
         shell: bash
-        env:
-          DAY: ${{ steps.day.outputs.day }}
         run: |
-
-          set -e
-
+          DAY="${{ steps.day.outputs.day }}"
           FILE="data/day-$(printf '%03d' "$DAY").json"
 
           if [ ! -f "$FILE" ]; then
-            echo "ERROR: Generated file does not exist: $FILE"
+            echo "ERROR: Generated file not found: $FILE"
             exit 1
           fi
 
-          echo "Generated file:"
-          echo "$FILE"
-
-          echo
-          echo "File size:"
-          wc -c "$FILE"
-
-          echo
-          echo "JSON syntax check:"
-
           node -e "
-            const fs = require('fs');
-            const file = process.argv[1];
-            JSON.parse(fs.readFileSync(file, 'utf8'));
-            console.log('Valid JSON:', file);
-          " "$FILE"
+          const fs=require('fs');
+          const f=process.argv[1];
+          const x=JSON.parse(fs.readFileSync(f,'utf8'));
+          if(Number(x.day)!==Number(process.argv[2])) throw new Error('Day mismatch');
+          if(!x.lesson) throw new Error('Missing lesson');
+          if(!Array.isArray(x.examples)||x.examples.length<2) throw new Error('Missing examples');
+          if(!Array.isArray(x.mcqs)||x.mcqs.length<5) throw new Error('Missing MCQs');
+          x.mcqs.forEach((m,i)=>{
+            if(!Array.isArray(m.options)||m.options.length!==4) throw new Error('MCQ '+(i+1)+' must have 4 options');
+            if(!m.options.includes(m.answer)) throw new Error('MCQ '+(i+1)+' answer mismatch');
+            if(!m.explanation) throw new Error('MCQ '+(i+1)+' explanation missing');
+          });
+          console.log('JSON verification passed:',f);
+          " "$FILE" "$DAY"
 
-
-      # ------------------------------------------------------
-      # FINAL VALIDATION
-      # ------------------------------------------------------
-
-      - name: Final Lesson Validation
+      - name: Commit Daily JSON
         shell: bash
-        env:
-          DAY: ${{ steps.day.outputs.day }}
         run: |
-
-          set -e
-
+          DAY="${{ steps.day.outputs.day }}"
           FILE="data/day-$(printf '%03d' "$DAY").json"
 
-          echo "Running structural validation..."
-          npm run validate-day -- "$FILE"
-
-          echo
-          echo "Running editorial quality check..."
-          npm run quality-check -- "$FILE"
-
-
-      # ------------------------------------------------------
-      # GIT STATUS
-      # ------------------------------------------------------
-
-      - name: Check Git Changes
-        shell: bash
-        run: |
-
-          git status --short
-
-
-      # ------------------------------------------------------
-      # COMMIT
-      # ------------------------------------------------------
-
-      - name: Commit Generated Lesson
-        shell: bash
-        env:
-          DAY: ${{ steps.day.outputs.day }}
-        run: |
-
-          set -e
-
-          FILE="data/day-$(printf '%03d' "$DAY").json"
-
-          git config user.name "Vidhwaan Constitution 365"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add "$FILE"
 
           if git diff --cached --quiet; then
-
             echo "No changes to commit."
-
-          else
-
-            git commit \
-              -m "Generate Constitution 365 Day ${DAY}"
-
-            echo "Lesson committed."
-
+            exit 0
           fi
 
-
-      # ------------------------------------------------------
-      # PUSH
-      # ------------------------------------------------------
-
-      - name: Push Generated Lesson
-        shell: bash
-        run: |
-
-          set -e
-
+          git commit -m "Generate Constitution 365 Day $DAY"
           git push
-
-          echo "Changes pushed successfully."
