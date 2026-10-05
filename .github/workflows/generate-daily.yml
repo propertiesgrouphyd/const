@@ -34,7 +34,7 @@ jobs:
           if [ -n "${{ inputs.day }}" ]; then
             DAY="${{ inputs.day }}"
           else
-            START_DATE="2026-08-30"
+            START_DATE="2026-10-05"
             TODAY=$(TZ=Asia/Kolkata date +%Y-%m-%d)
 
             START_TS=$(date -d "$START_DATE" +%s)
