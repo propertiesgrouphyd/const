@@ -1,4 +1,4 @@
-const fs=require("fs"),path=require("path");const DAY=Number(process.env.DAY||0),ROOT=process.cwd(),DATA=path.join(ROOT,"data"),SYLLABUS=JSON.parse(fs.readFileSync(path.join(DATA,"syllabus.json"),"utf8")),SOURCES=JSON.parse(fs.readFileSync(path.join(DATA,"constitutional-sources.json"),"utf8"));if(!Number.isInteger(DAY)||DAY<1||DAY>365)throw new Error("DAY must be an integer between 1 and 365");const s=SYLLABUS.find(x=>Number(x.day)===DAY),r=SOURCES.days?.[String(DAY)];if(!s)throw new Error(`Syllabus entry not found for day ${DAY}`);if(!r)throw new Error(`Constitutional source not found for day ${DAY}`);const prompt=`You are the lead Telugu constitutional educator and senior factual editor for CONSTITUTION 365, a premium public-education program by Vidhwaan. Create Day ${DAY} for ordinary citizens, children, students, workers, parents, professionals and senior citizens. The purpose is deep understanding, not exam coaching. The reader should finish thinking: "ఇది నాకు ఇంత సులభంగా ఎవరూ చెప్పలేదు."
+import fs from"fs";import path from"path";const DAY=Number(process.env.DAY||0),ROOT=process.cwd(),DATA=path.join(ROOT,"data"),SYLLABUS=JSON.parse(fs.readFileSync(path.join(DATA,"syllabus.json"),"utf8")),SOURCES=JSON.parse(fs.readFileSync(path.join(DATA,"constitutional-sources.json"),"utf8"));if(!Number.isInteger(DAY)||DAY<1||DAY>365)throw new Error("DAY must be an integer between 1 and 365");const s=SYLLABUS.find(x=>Number(x.day)===DAY),r=SOURCES.days?.[String(DAY)];if(!s)throw new Error(`Syllabus entry not found for day ${DAY}`);if(!r)throw new Error(`Constitutional source not found for day ${DAY}`);const prompt=`You are the lead Telugu constitutional educator and senior factual editor for CONSTITUTION 365, a premium public-education program by Vidhwaan. Create Day ${DAY} for ordinary citizens, children, students, workers, parents, professionals and senior citizens. The purpose is deep understanding, not exam coaching. The reader should finish thinking: "ఇది నాకు ఇంత సులభంగా ఎవరూ చెప్పలేదు."
 
 WRITE IN NATIVE TELUGU:
 Use natural, modern, precise, grammatically correct Telugu written by an excellent Telugu educator. Do NOT translate English sentence-by-sentence. Avoid artificial Telugu, machine-translation patterns, unnecessary Sanskritized wording, motivational filler, repetition, exaggerated language and textbook-like exam language. Use short and medium-length sentences. Explain difficult terms immediately in simple Telugu. Keep the writing warm, clear, intelligent and memorable.
@@ -19,11 +19,7 @@ NON-NEGOTIABLE FACTUAL RULES:
 2. Never invent an Article, Part, Schedule, constitutional power, constitutional procedure, institution, date, person, event, amendment, historical fact or legal claim.
 3. Never attach an Article or Part merely because it sounds relevant.
 4. If the supplied source does not support a specific constitutional provision, do not invent one.
-5. Clearly distinguish:
-   - what the Constitution itself provides;
-   - what an ordinary law provides;
-   - what courts have interpreted;
-   - what is only a general democratic or explanatory principle.
+5. Clearly distinguish what the Constitution itself provides, what an ordinary law provides, what courts have interpreted, and what is only a general democratic or explanatory principle.
 6. Never present a general principle, analogy, interpretation or ordinary-law rule as though it were directly written in the Constitution.
 7. Every historical name, date, event and claim must be supported by the supplied source. If the source does not support a historical detail, omit it rather than guessing.
 8. Do not use "social contract", "everyone agreed", "renewed agreement", or similar claims unless the supplied source explicitly supports them.
