@@ -1,17 +1,13 @@
 {
-  "name": "constitution-365",
+  "name": "vidhwaan-state",
   "version": "1.0.0",
   "private": true,
-  "description": "Constitution 365 — A Telugu-first 365-day Indian Constitution education platform by Vidhwaan.",
-  "main": "scripts/generate-day.js",
-  "type": "commonjs",
-  "engines": {
-    "node": ">=20"
-  },
+  "type": "module",
   "scripts": {
-    "generate": "node scripts/generate-day.js",
-    "validate-source-map": "node scripts/source-map.js --validate",
-    "validate-day": "node scripts/validate-day.js",
-    "quality-check": "node scripts/quality-check.js"
+    "dev": "python3 -m http.server 8080 -d .",
+    "start": "python3 -m http.server 8080 -d .",
+    "generate:day": "node generator.js",
+    "validate": "node generator.js --validate",
+    "validate:syllabus": "node -e \"const fs=require('fs'); JSON.parse(fs.readFileSync('data/syllabus.json','utf8')); console.log('syllabus.json: OK')\""
   }
 }
