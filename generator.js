@@ -1003,7 +1003,7 @@ function validateJudicialSources() {
         !caseRegistry[caseId]
       ) {
         errors.push(
-          `Day ${DAY}: doctrine "${doctrineId}" references missing case "${caseId}"`
+          `Day ${DAY}: doctrine "${doctrineId}" references unresolved case "${caseId}"`
         );
       }
     }
@@ -1074,11 +1074,22 @@ function validateOfficialSources() {
   }
 
   const registry =
-    isPlainObject(
-      OFFICIAL.institution_registry
+    Array.isArray(
+      OFFICIAL.primary_official_sources
     )
-      ? OFFICIAL.institution_registry
-      : {};
+      ? OFFICIAL.primary_official_sources
+      : [];
+
+  const validIds =
+    new Set(
+      registry
+        .map(
+          source =>
+            source &&
+            source.id
+        )
+        .filter(Boolean)
+    );
 
   const declared =
     unique(
@@ -1098,7 +1109,9 @@ function validateOfficialSources() {
     of declared
   ) {
     if (
-      !registry[sourceId]
+      !validIds.has(
+        sourceId
+      )
     ) {
       errors.push(
         `Day ${DAY}: unresolved official source "${sourceId}"`
@@ -1111,675 +1124,315 @@ function validateOfficialSources() {
 
 
 /* ==========================================================================
-   SOURCE-MAP DAY ROUTING VALIDATION
-========================================================================== */
-
-function validateDayRouting() {
-  const errors = [];
-
-  const dayMap =
-    SOURCE_MAP.day_map &&
-    typeof SOURCE_MAP.day_map === "object" &&
-    !Array.isArray(
-      SOURCE_MAP.day_map
-    )
-      ? SOURCE_MAP.day_map
-      : {};
-
-  const explicit =
-    dayMap[String(DAY)];
-
-  if (!explicit) {
-    return errors;
-  }
-
-  if (
-    !isPlainObject(explicit)
-  ) {
-    errors.push(
-      `Day ${DAY}: source-map day entry must be an object`
-    );
-
-    return errors;
-  }
-
-  if (
-    !Array.isArray(
-      explicit.sources
-    )
-  ) {
-    errors.push(
-      `Day ${DAY}: source-map day entry must contain a sources array`
-    );
-
-    return errors;
-  }
-
-  const declaredLayers =
-    unique(
-      explicit.sources
-    );
-
-  for (
-    const layer
-    of declaredLayers
-  ) {
-    if (
-      !ALLOWED_SOURCE_LAYERS.has(
-        layer
-      )
-    ) {
-      errors.push(
-        `Day ${DAY}: source-map contains unsupported source layer "${layer}"`
-      );
-    }
-  }
-
-  for (
-    const layer
-    of declaredLayers
-  ) {
-    if (
-      !requiredLayers.includes(
-        layer
-      )
-    ) {
-      errors.push(
-        `Day ${DAY}: source-map declares "${layer}" but authoritative routing does not require it`
-      );
-    }
-  }
-
-  for (
-    const layer
-    of requiredLayers
-  ) {
-    if (
-      !declaredLayers.includes(
-        layer
-      )
-    ) {
-      errors.push(
-        `Day ${DAY}: authoritative routing requires "${layer}" but source-map does not declare it`
-      );
-    }
-  }
-
-  return errors;
-}
-
-
-/* ==========================================================================
    SOURCE VALIDATION
 ========================================================================== */
 
-const validationErrors = [
-  ...validateSourceMap(),
-  ...validateSyllabus(),
-  ...validateConstitutionalSource(),
-  ...validateRequiredSources(),
-  ...validateDayRouting(),
-  ...validateLegalSources(),
-  ...validateHistoricalSources(),
-  ...validateJudicialSources(),
-  ...validateOfficialSources()
-];
+function validateAllSources() {
+  const errors = [];
 
-if (
-  validationErrors.length > 0
-) {
-  console.error("");
-  console.error(
-    "=========================================="
-  );
-  console.error(
-    "SOURCE VALIDATION FAILED"
-  );
-  console.error(
-    "=========================================="
+  errors.push(
+    ...validateSourceMap()
   );
 
-  for (
-    const error
-    of validationErrors
+  errors.push(
+    ...validateSyllabus()
+  );
+
+  errors.push(
+    ...validateConstitutionalSource()
+  );
+
+  errors.push(
+    ...validateRequiredSources()
+  );
+
+  errors.push(
+    ...validateLegalSources()
+  );
+
+  errors.push(
+    ...validateHistoricalSources()
+  );
+
+  errors.push(
+    ...validateJudicialSources()
+  );
+
+  errors.push(
+    ...validateOfficialSources()
+  );
+
+  if (
+    errors.length > 0
   ) {
-    console.error(
-      `ERROR: ${error}`
+    throw new Error(
+      errors.join("\n")
     );
   }
-
-  console.error("");
-  console.error(
-    `Day ${DAY} was NOT sent to the AI generator.`
-  );
-  console.error(
-    "=========================================="
-  );
-
-  process.exit(1);
 }
 
 
 /* ==========================================================================
-   VALIDATION-ONLY MODE
-========================================================================== */
-
-if (VALIDATE_ONLY) {
-  console.log("");
-  console.log(
-    "=========================================="
-  );
-  console.log(
-    "CONSTITUTION 365 SOURCE VALIDATION"
-  );
-  console.log(
-    "=========================================="
-  );
-  console.log(
-    `Day: ${DAY}`
-  );
-  console.log(
-    `Title: ${syllabusEntry.title}`
-  );
-  console.log(
-    `Required sources: ${requiredLayers.join(", ")}`
-  );
-  console.log("");
-  console.log(
-    "All authoritative source validations passed."
-  );
-  console.log(
-    "No AI generation was performed."
-  );
-  console.log(
-    "=========================================="
-  );
-
-  process.exit(0);
-}
-
-
-/* ==========================================================================
-   BUILD AUTHORITATIVE SOURCE CONTEXT
+   BUILD SOURCE CONTEXT
 ========================================================================== */
 
 function buildSourceContext() {
-  return {
+  const context = {
+    day: DAY,
+
+    syllabus: {
+      day: syllabusEntry.day,
+      title: syllabusEntry.title,
+      stage: syllabusEntry.stage,
+      focus: syllabusEntry.focus
+    },
+
     constitutional: {
       source_type:
         constitutionalEntry.source_type ||
         null,
 
       articles:
-        constitutionalEntry.articles ||
-        [],
+        Array.isArray(
+          constitutionalEntry.articles
+        )
+          ? constitutionalEntry.articles
+          : [],
 
       parts:
-        constitutionalEntry.parts ||
-        [],
+        Array.isArray(
+          constitutionalEntry.parts
+        )
+          ? constitutionalEntry.parts
+          : [],
 
       references:
-        constitutionalEntry.references ||
-        []
+        Array.isArray(
+          constitutionalEntry.references
+        )
+          ? constitutionalEntry.references
+          : [],
+
+      additional_sources:
+        Array.isArray(
+          constitutionalEntry.additional_sources
+        )
+          ? constitutionalEntry.additional_sources
+          : []
     },
 
     historical:
-      daySources.historical
-        ? {
-            sources:
-              daySources.historical.sources ||
-              [],
-
-            historical_focus:
-              daySources.historical.historical_focus ||
-              [],
-
-            use:
-              daySources.historical.use ||
-              "",
-
-            note:
-              daySources.historical.note ||
-              ""
-          }
-        : null,
+      daySources.historical,
 
     legal:
-      daySources.legal
-        ? {
-            legal_sources:
-              daySources.legal.legal_sources ||
-              [],
-
-            articles:
-              daySources.legal.articles ||
-              [],
-
-            parts:
-              daySources.legal.parts ||
-              [],
-
-            references:
-              daySources.legal.references ||
-              [],
-
-            coverage:
-              daySources.legal.coverage ||
-              "",
-
-            note:
-              daySources.legal.note ||
-              ""
-          }
-        : null,
+      daySources.legal,
 
     judicial:
-      daySources.judicial
-        ? {
-            status:
-              daySources.judicial.status ||
-              null,
-
-            doctrines:
-              daySources.judicial.doctrines ||
-              [],
-
-            cases:
-              daySources.judicial.cases ||
-              [],
-
-            references:
-              daySources.judicial.references ||
-              [],
-
-            use:
-              daySources.judicial.use ||
-              ""
-          }
-        : null,
+      daySources.judicial,
 
     official:
       daySources.official
-        ? {
-            sources:
-              daySources.official.sources ||
-              [],
-
-            references:
-              daySources.official.references ||
-              [],
-
-            use:
-              daySources.official.use ||
-              ""
-          }
-        : null
   };
-}
 
-const SOURCE_CONTEXT =
-  buildSourceContext();
+  return JSON.stringify(
+    context,
+    null,
+    2
+  );
+}
 
 
 /* ==========================================================================
    PROMPT
 ========================================================================== */
 
-const prompt = `
+function buildPrompt() {
+  const sourceContext =
+    buildSourceContext();
 
-You are creating Day ${DAY} of CONSTITUTION 365.
+  return `
+You are generating Day ${DAY} of VIDHWAAN CONSTITUTION 365.
 
-This is a premium Telugu constitutional education program.
+This is a Telugu constitutional education program.
 
-The purpose is to help ordinary citizens understand the Constitution of India accurately, practically and clearly.
+The supplied syllabus is INTERNAL planning data.
+It may contain English.
+Do NOT copy its English learner-facing text into the final output.
 
-This is NOT exam coaching.
+The final learner-facing content MUST be written entirely in Telugu.
 
-This is NOT a generic law lesson.
-
-This is NOT a place to add facts from your own knowledge.
-
-You must stay strictly inside the supplied authoritative source context.
-
---------------------------------------------------
-TODAY'S AUTHORITATIVE SYLLABUS
---------------------------------------------------
-
-Day:
-${syllabusEntry.day}
-
-Title:
-${syllabusEntry.title}
-
-Stage:
-${syllabusEntry.stage}
-
-Focus:
-${syllabusEntry.focus}
-
-
---------------------------------------------------
 AUTHORITATIVE SOURCE CONTEXT
---------------------------------------------------
+=============================
 
-${JSON.stringify(
-  SOURCE_CONTEXT,
-  null,
-  2
-)}
+${sourceContext}
 
-
---------------------------------------------------
 SOURCE DISCIPLINE
---------------------------------------------------
+=================
 
-Treat the supplied sources as separate layers.
+Use ONLY the supplied authoritative source context.
 
-CONSTITUTIONAL:
-The Constitution of India itself.
-
-HISTORICAL:
-Historical background only.
-
-LEGAL:
-Ordinary legislation and statutory frameworks.
-
-JUDICIAL:
-Court interpretation and constitutional doctrine.
-
-OFFICIAL:
-Official institutional information.
-
-Never merge these categories.
-
-Never describe a statute as though it is constitutional text.
-
-Never describe a court judgment as though it is an Article of the Constitution.
-
-Never describe historical background as though it is a constitutional provision.
-
-Never describe an official institutional fact as though it is constitutional text.
-
-
---------------------------------------------------
-ABSOLUTE FACTUAL ACCURACY
---------------------------------------------------
-
-Use ONLY information supported by the supplied source context.
-
-Do NOT invent or infer:
-
-- Articles
+Do not invent:
+- constitutional provisions
+- Article numbers
 - Parts
-- Schedules
-- constitutional powers
-- constitutional procedures
-- constitutional institutions
-- statutory Acts
-- statutory sections
-- statutory penalties
-- statutory authorities
-- legal rights
-- historical dates
+- constitutional doctrines
+- statutes
+- sections
+- judicial cases
+- judgments
 - historical events
-- historical quotations
-- court cases
-- case names
-- citations
-- judgment dates
-- bench composition
-- judicial holdings
-- judicial quotations
 - institutional facts
+- dates
+- legal propositions
 
-If a fact is not supported by the supplied sources, OMIT it.
+If a fact is not supported by the supplied source context,
+do not invent it.
 
-Do not fill a source gap from general knowledge.
+Keep these categories separate:
 
-Do not make a statement merely because it sounds legally reasonable.
+1. Constitution text and constitutional provisions
+2. Historical context
+3. Statutory law
+4. Judicial interpretation
+5. Official institutional information
 
-Do not add a legal claim merely to make the lesson more impressive.
+Do not present statutory law as if it were constitutional text.
 
-When the source only supports a general constitutional principle, explain only that principle.
+Do not present judicial interpretation as if it were the constitutional text.
 
-When the source does not establish a particular right, do not call it a constitutional right.
+Do not present historical claims as constitutional provisions.
 
-When the source does not establish a particular statutory rule, do not state that rule.
+Do not invent case names or holdings.
 
-When judicial material is supplied, identify it as judicial interpretation.
+Do not invent statutory sections.
 
-When statutory material is supplied, identify it as statutory law.
+TELUGU OUTPUT REQUIREMENT
+=========================
 
+Every learner-facing text value MUST be Telugu.
 
---------------------------------------------------
-VERY IMPORTANT LEGAL WRITING RULE
---------------------------------------------------
+The following fields MUST contain Telugu only:
 
-Do not make broad claims such as:
+- title
+- stage
+- focus
+- lesson
+- examples
+- why_it_matters
+- common_misunderstanding
+- reflection
+- every MCQ question
+- every MCQ option
+- every MCQ answer
+- every MCQ explanation
 
-"the Constitution gives everyone a right to vote"
+Do NOT use English alphabet letters A-Z or a-z
+inside any of those learner-facing fields.
 
-unless the supplied source specifically establishes that proposition.
+Do NOT use Romanized Telugu.
 
-Do not say:
+Do NOT use English words.
 
-"education, health and livelihood are all fundamental rights"
+Do NOT use English abbreviations.
 
-unless the supplied source specifically establishes each proposition.
+Do NOT use English labels.
 
-Do not say:
+Use Telugu script for unavoidable concepts wherever a Telugu equivalent can be used.
 
-"every unconstitutional law automatically becomes void"
+Technical metadata such as:
+- JSON property names
+- constitutional_reference
+- source_metadata
+- Article references
+- source IDs
+- source file names
 
-unless the supplied source context specifically supports the exact formulation.
+is internal metadata and is NOT learner-facing.
 
-Do not convert constitutional values, Directive Principles,
-fundamental rights, statutory rights, electoral rights,
-or judicially interpreted principles into one undifferentiated category.
+Do not translate or alter authoritative technical metadata.
 
-Use precise wording.
+CONTENT REQUIREMENTS
+====================
 
+Create a clear, accurate and useful lesson for the learner.
 
---------------------------------------------------
-LESSON
---------------------------------------------------
+The lesson should explain the assigned constitutional topic
+using the supplied authoritative sources.
 
-Create one complete lesson ONLY about this day's syllabus topic.
+Use simple, natural Telugu.
 
-The lesson must:
+The content should be educational rather than promotional.
 
-- explain the central idea clearly
-- remain faithful to the authoritative sources
-- use natural Telugu
-- be understandable to ordinary citizens
-- explain why the topic matters
-- use realistic examples only when supported
-- identify common misunderstandings
-- distinguish constitutional text from other source layers
+Explain the constitutional significance clearly.
 
-Do not use fictional legal situations that require unsupported legal conclusions.
+Use practical examples where appropriate.
 
-Do not invent names, cases, dates or legal outcomes.
+Do not create unsupported hypothetical legal conclusions.
 
-Do not turn the lesson into exam notes.
-
-Do not repeat the title unnecessarily.
-
-Do not use unnecessary legal jargon.
-
-
---------------------------------------------------
 EXAMPLES
---------------------------------------------------
+========
 
-Provide multiple practical examples.
+Provide at least 3 useful examples.
 
-Every example must be directly supported by the authoritative source context.
+Each example must be written entirely in Telugu.
 
-Do not create examples that introduce new legal facts.
-
-If an example would require a legal rule not present in the supplied sources, do not use that example.
-
-
---------------------------------------------------
 MCQs
---------------------------------------------------
+====
 
 Create exactly 5 MCQs.
 
-Each MCQ must contain exactly 4 unique options.
+Each MCQ must contain:
+- question
+- exactly 4 options
+- answer
+- explanation
 
-Exactly ONE option must be correct.
+The answer must exactly match one of the four options.
 
-The answer must exactly match one option.
+All MCQ learner-facing text must be entirely in Telugu.
 
-Every MCQ must be answerable from the supplied source context and lesson.
+Do not use A/B/C/D as option labels.
 
-Do not use outside legal knowledge.
+ACCURACY
+========
 
-Do not make a question difficult by introducing an unsupported fact.
+Accuracy is more important than completeness.
 
-Test understanding rather than memorization.
+If the supplied source context does not support a claim,
+omit the claim rather than guessing.
 
-Each explanation must explain why the selected option is correct.
-
-
---------------------------------------------------
-MCQ QUALITY CONTROL
---------------------------------------------------
-
-Before returning JSON, check every MCQ:
-
-1. Is the question supported by the supplied sources?
-2. Is there exactly one correct option?
-3. Does the answer exactly match an option?
-4. Are all four options unique?
-5. Does the explanation support the selected answer?
-6. Did the question accidentally introduce an unsupported Article, Act, case, right or procedure?
-
-If any answer is NO, rewrite that MCQ before returning the JSON.
-
-
---------------------------------------------------
-LANGUAGE
---------------------------------------------------
-
-The lesson content must be natural Telugu.
-
-Use Telugu script consistently.
-
-DO NOT use:
-
-- Chinese characters
-- Japanese characters
-- Korean characters
-- Devanagari characters
-- Bengali characters
-- Gujarati characters
-- Gurmukhi characters
-- Kannada characters
-- Malayalam characters
-- Tamil characters
-- Arabic characters
-- Hebrew characters
-- Cyrillic characters
-- Greek characters
-
-Do not accidentally mix another Indian or foreign script into Telugu.
-
-Do not use transliterated Telugu when natural Telugu is available.
-
-English may be used only for an unavoidable official name,
-technical term, abbreviation, or proper noun when genuinely necessary.
-
-Do not randomly mix English into Telugu sentences.
-
-Before returning the answer, inspect every lesson,
-example, MCQ, answer, explanation and reflection for
-foreign-script contamination.
-
-
---------------------------------------------------
-DO NOT MENTION
---------------------------------------------------
-
-Do not mention:
-
-- AI
-- Groq
-- this prompt
-- generation
-- source validation
-- source registry
-- internal files
-- internal implementation
-- syllabus processing
-
-
---------------------------------------------------
-AUTHORITATIVE FIELDS
---------------------------------------------------
-
-The following values are authoritative and MUST NOT be creatively changed:
-
-day:
-${DAY}
-
-title:
-${syllabusEntry.title}
-
-stage:
-${syllabusEntry.stage}
-
-focus:
-${syllabusEntry.focus}
-
-The program will restore these fields after generation.
-
-
---------------------------------------------------
-CONSTITUTIONAL REFERENCE
---------------------------------------------------
-
-Return constitutional_reference in the requested structure.
-
-The program will restore the authoritative
-articles, parts and references after generation.
-
-Do not invent constitutional references.
-
-
---------------------------------------------------
-OUTPUT
---------------------------------------------------
+OUTPUT FORMAT
+=============
 
 Return ONLY valid JSON.
-
-No Markdown.
-
-No code fences.
-
-No comments.
-
-No trailing commas.
 
 Use exactly this structure:
 
 {
   "day": ${DAY},
-  "title": "",
-  "stage": "",
-  "focus": "",
-  "lesson": "",
-  "examples": [],
-  "why_it_matters": "",
-  "common_misunderstanding": "",
+  "title": "తెలుగు శీర్షిక",
+  "stage": "తెలుగు దశ",
+  "focus": "తెలుగు అంశం",
+  "lesson": "తెలుగు పాఠం",
+  "examples": [
+    "తెలుగు ఉదాహరణ 1",
+    "తెలుగు ఉదాహరణ 2",
+    "తెలుగు ఉదాహరణ 3"
+  ],
+  "why_it_matters": "తెలుగు వివరణ",
+  "common_misunderstanding": "తెలుగు వివరణ",
+  "reflection": "తెలుగు ఆలోచన ప్రశ్న",
   "mcqs": [
     {
-      "question": "",
-      "options": ["", "", "", ""],
-      "answer": "",
-      "explanation": ""
+      "question": "తెలుగు ప్రశ్న",
+      "options": [
+        "తెలుగు ఎంపిక 1",
+        "తెలుగు ఎంపిక 2",
+        "తెలుగు ఎంపిక 3",
+        "తెలుగు ఎంపిక 4"
+      ],
+      "answer": "తెలుగు సరైన ఎంపిక",
+      "explanation": "తెలుగు వివరణ"
     }
   ],
   "constitutional_reference": {
@@ -1787,16 +1440,19 @@ Use exactly this structure:
     "parts": [],
     "references": []
   },
-  "reflection": ""
+  "source_metadata": {}
 }
 
-The JSON must be syntactically valid.
+The generator will replace authoritative metadata fields after generation.
 
-`;
+IMPORTANT:
+The final learner-facing strings must contain ZERO English alphabet letters.
+`.trim();
+}
 
 
 /* ==========================================================================
-   GROQ CALL
+   GROQ
 ========================================================================== */
 
 async function callGroq(
@@ -1807,9 +1463,12 @@ async function callGroq(
 
   if (!key) {
     throw new Error(
-      "GROQ_API_KEY is missing"
+      "GROQ_API_KEY is not configured"
     );
   }
+
+  const prompt =
+    buildPrompt();
 
   const response =
     await fetch(
@@ -1849,7 +1508,7 @@ async function callGroq(
                 role: "system",
 
                 content:
-                  "You are an exceptionally careful Telugu constitutional educator. Use only the supplied authoritative source context. Never invent constitutional, historical, statutory, judicial or institutional facts. Never mix foreign scripts into Telugu. Return only valid JSON."
+                  "You are an exceptionally careful Telugu constitutional educator. Use only the supplied authoritative source context. Never invent constitutional, historical, statutory, judicial or institutional facts. Every learner-facing text field must contain Telugu only and must contain zero English alphabet letters. Return only valid JSON."
               },
 
               {
@@ -1900,46 +1559,32 @@ async function callGroq(
    SCRIPT VALIDATION
 ========================================================================== */
 
-/*
-  Telugu Unicode block:
-  U+0C00 - U+0C7F
-
-  Allowed:
-  - Telugu
-  - ASCII letters only when unavoidable
-  - ASCII digits
-  - common punctuation
-  - common Unicode punctuation/numbers
-
-  Explicitly reject other major writing systems.
-*/
-
 const FORBIDDEN_SCRIPT_RANGES = [
-  /[\u0400-\u04FF]/, // Cyrillic
-  /[\u0370-\u03FF]/, // Greek
-  /[\u0590-\u05FF]/, // Hebrew
-  /[\u0600-\u06FF]/, // Arabic
-  /[\u0700-\u074F]/, // Syriac
-  /[\u0780-\u07BF]/, // Thaana
-  /[\u0900-\u097F]/, // Devanagari
-  /[\u0980-\u09FF]/, // Bengali
-  /[\u0A00-\u0A7F]/, // Gurmukhi
-  /[\u0A80-\u0AFF]/, // Gujarati
-  /[\u0B00-\u0B7F]/, // Odia
-  /[\u0B80-\u0BFF]/, // Tamil
-  /[\u0C80-\u0CFF]/, // Kannada
-  /[\u0D00-\u0D7F]/, // Malayalam
-  /[\u0D80-\u0DFF]/, // Sinhala
-  /[\u0E00-\u0E7F]/, // Thai
-  /[\u0E80-\u0EFF]/, // Lao
-  /[\u1000-\u109F]/, // Myanmar
-  /[\u1100-\u11FF]/, // Hangul Jamo
-  /[\u3040-\u30FF]/, // Hiragana/Katakana
-  /[\u3400-\u4DBF]/, // CJK Extension A
-  /[\u4E00-\u9FFF]/, // CJK Unified
-  /[\uAC00-\uD7AF]/, // Hangul
-  /[\uF900-\uFAFF]/, // CJK compatibility
-  /[\uFF66-\uFF9F]/  // Halfwidth Katakana
+  /[\u0400-\u04FF]/,
+  /[\u0370-\u03FF]/,
+  /[\u0590-\u05FF]/,
+  /[\u0600-\u06FF]/,
+  /[\u0700-\u074F]/,
+  /[\u0780-\u07BF]/,
+  /[\u0900-\u097F]/,
+  /[\u0980-\u09FF]/,
+  /[\u0A00-\u0A7F]/,
+  /[\u0A80-\u0AFF]/,
+  /[\u0B00-\u0B7F]/,
+  /[\u0B80-\u0BFF]/,
+  /[\u0C80-\u0CFF]/,
+  /[\u0D00-\u0D7F]/,
+  /[\u0D80-\u0DFF]/,
+  /[\u0E00-\u0E7F]/,
+  /[\u0E80-\u0EFF]/,
+  /[\u1000-\u109F]/,
+  /[\u1100-\u11FF]/,
+  /[\u3040-\u30FF]/,
+  /[\u3400-\u4DBF]/,
+  /[\u4E00-\u9FFF]/,
+  /[\uAC00-\uD7AF]/,
+  /[\uF900-\uFAFF]/,
+  /[\uFF66-\uFF9F]/
 ];
 
 
@@ -1983,6 +1628,10 @@ function containsTelugu(
 }
 
 
+/* ==========================================================================
+   TELUGU STRING VALIDATION
+========================================================================== */
+
 function validateTeluguString(
   value,
   fieldName
@@ -2009,17 +1658,25 @@ function validateTeluguString(
     return errors;
   }
 
+  /*
+   * FINAL REQUIREMENT:
+   * No English alphabet characters are
+   * allowed in learner-facing content.
+   */
+
+  if (
+    /[A-Za-z]/.test(value)
+  ) {
+    errors.push(
+      `${fieldName} contains English letters`
+    );
+  }
+
   if (
     !containsTelugu(value)
   ) {
     errors.push(
       `${fieldName} must contain Telugu text`
-    );
-  }
-
-  if (/[A-Za-z]/.test(value)) {
-    errors.push(
-      `${fieldName} contains English letters`
     );
   }
 
@@ -2066,6 +1723,10 @@ function validateTeluguString(
   return errors;
 }
 
+
+/* ==========================================================================
+   TELUGU CONTENT VALIDATION
+========================================================================== */
 
 function validateTeluguContent(
   x
@@ -2478,6 +2139,13 @@ function validateGeneratedContent(
 function restoreAuthoritativeFields(
   generated
 ) {
+  /*
+   * IMPORTANT:
+   * Do NOT restore title/stage/focus from syllabus.
+   * The syllabus may be English/internal.
+   * The generated learner-facing values must remain Telugu.
+   */
+
   generated.day =
     DAY;
 
@@ -2604,6 +2272,15 @@ function validateFinalOutput(
       "Final output day mismatch"
     );
   }
+
+  /*
+   * Do NOT compare title/stage/focus
+   * against the English syllabus.
+   *
+   * They are learner-facing AI-generated
+   * Telugu fields and have already passed
+   * the strict Telugu validation above.
+   */
 
   const expectedArticles =
     JSON.stringify(
@@ -2880,7 +2557,11 @@ async function generateValidatedOutput() {
   );
 
   console.log(
-    "Foreign-script protection enabled."
+    "Strict Telugu-only learner content enabled."
+  );
+
+  console.log(
+    "English-letter rejection enabled."
   );
 
   console.log(
@@ -2892,6 +2573,22 @@ async function generateValidatedOutput() {
   );
 
   console.log("");
+
+  /*
+   * Run complete source validation before generation.
+   */
+
+  validateAllSources();
+
+  if (
+    VALIDATE_ONLY
+  ) {
+    console.log(
+      "Validation-only mode: PASSED."
+    );
+
+    process.exit(0);
+  }
 
   console.log(
     "Calling Groq..."
@@ -2978,19 +2675,15 @@ async function generateValidatedOutput() {
   );
 
   console.log(
-    "Foreign-script validation: PASSED"
+    "Telugu-only learner content: PASSED"
   );
 
   console.log(
-    "Constitutional-reference validation: PASSED"
+    "English-letter validation: PASSED"
   );
 
   console.log(
-    "Source-provenance validation: PASSED"
-  );
-
-  console.log(
-    "Final JSON re-read validation: PASSED"
+    "Final disk validation: PASSED"
   );
 
   console.log(
