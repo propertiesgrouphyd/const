@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 
 const DAY = Number(process.env.DAY || 0);
+const VALIDATE_ONLY =
+  process.argv.includes("--validate");
 
 const ROOT = process.cwd();
 const DATA = path.join(ROOT, "data");
@@ -16,13 +18,45 @@ const FILES = {
   official: "official-sources.json"
 };
 
+const ALLOWED_CONSTITUTIONAL_TYPES =
+  new Set([
+    "constitutional",
+    "conceptual",
+    "historical",
+    "statutory",
+    "judicial",
+    "mixed"
+  ]);
+
+const ALLOWED_SOURCE_LAYERS =
+  new Set([
+    "constitutional",
+    "historical",
+    "legal",
+    "judicial",
+    "official"
+  ]);
+
+const REQUIRED_TEXT_FIELDS = [
+  "title",
+  "stage",
+  "focus",
+  "lesson",
+  "why_it_matters",
+  "common_misunderstanding",
+  "reflection"
+];
+
+const MAX_GENERATION_ATTEMPTS = 4;
+
 
 /* ==========================================================================
    LOAD JSON
 ========================================================================== */
 
 function loadJson(fileName) {
-  const filePath = path.join(DATA, fileName);
+  const filePath =
+    path.join(DATA, fileName);
 
   if (!fs.existsSync(filePath)) {
     throw new Error(
@@ -32,7 +66,10 @@ function loadJson(fileName) {
 
   try {
     return JSON.parse(
-      fs.readFileSync(filePath, "utf8")
+      fs.readFileSync(
+        filePath,
+        "utf8"
+      )
     );
   } catch (error) {
     throw new Error(
@@ -58,7 +95,7 @@ if (
 
 
 /* ==========================================================================
-   LOAD ALL AUTHORITATIVE SOURCE FILES
+   LOAD AUTHORITATIVE SOURCE FILES
 ========================================================================== */
 
 const SYLLABUS =
@@ -102,8 +139,10 @@ if (SYLLABUS.length !== 365) {
 if (
   !CONSTITUTIONAL ||
   typeof CONSTITUTIONAL !== "object" ||
+  Array.isArray(CONSTITUTIONAL) ||
   !CONSTITUTIONAL.days ||
-  typeof CONSTITUTIONAL.days !== "object"
+  typeof CONSTITUTIONAL.days !== "object" ||
+  Array.isArray(CONSTITUTIONAL.days)
 ) {
   throw new Error(
     "constitutional-sources.json must contain a days object"
@@ -112,7 +151,8 @@ if (
 
 if (
   !SOURCE_MAP ||
-  typeof SOURCE_MAP !== "object"
+  typeof SOURCE_MAP !== "object" ||
+  Array.isArray(SOURCE_MAP)
 ) {
   throw new Error(
     "source-map.json must contain an object"
@@ -126,7 +166,8 @@ if (
 
 const syllabusEntry =
   SYLLABUS.find(
-    item => Number(item.day) === DAY
+    item =>
+      Number(item?.day) === DAY
   );
 
 if (!syllabusEntry) {
@@ -149,11 +190,16 @@ if (!constitutionalEntry) {
    HELPERS
 ========================================================================== */
 
-function getDaySource(container, day) {
+function getDaySource(
+  container,
+  day
+) {
   if (
     !container ||
+    typeof container !== "object" ||
     !container.days ||
-    typeof container.days !== "object"
+    typeof container.days !== "object" ||
+    Array.isArray(container.days)
   ) {
     return null;
   }
@@ -187,6 +233,26 @@ function unique(values) {
         .map(String)
     )
   ];
+}
+
+
+function isPlainObject(value) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  );
+}
+
+
+function hasOwn(
+  object,
+  key
+) {
+  return Object.prototype.hasOwnProperty.call(
+    object,
+    key
+  );
 }
 
 
@@ -250,7 +316,8 @@ function validateSourceMap() {
 
   if (
     !SOURCE_MAP.source_files ||
-    typeof SOURCE_MAP.source_files !== "object"
+    typeof SOURCE_MAP.source_files !== "object" ||
+    Array.isArray(SOURCE_MAP.source_files)
   ) {
     errors.push(
       "source-map.json is missing source_files"
@@ -271,18 +338,16 @@ function validateSourceMap() {
     }
   }
 
-  const allowedTypes =
-    new Set([
-      "constitutional",
-      "historical",
-      "legal",
-      "judicial",
-      "official"
-    ]);
-
   if (
+    !SOURCE_MAP.validation ||
+    typeof SOURCE_MAP.validation !== "object"
+  ) {
+    errors.push(
+      "source-map.json is missing validation"
+    );
+  } else if (
     !Array.isArray(
-      SOURCE_MAP.validation?.allowed_source_types
+      SOURCE_MAP.validation.allowed_source_types
     )
   ) {
     errors.push(
@@ -293,7 +358,9 @@ function validateSourceMap() {
       const type
       of SOURCE_MAP.validation.allowed_source_types
     ) {
-      if (!allowedTypes.has(type)) {
+      if (
+        !ALLOWED_SOURCE_LAYERS.has(type)
+      ) {
         errors.push(
           `source-map.json contains unsupported source type "${type}"`
         );
@@ -323,9 +390,12 @@ function validateSourceMap() {
 ========================================================================== */
 
 /*
-  IMPORTANT ROUTING RULES
+  ROUTING
 
   constitutional
+      -> constitutional only
+
+  conceptual
       -> constitutional only
 
   historical
@@ -342,8 +412,8 @@ function validateSourceMap() {
          explicitly declared additional_sources +
          actual day-level source registry mappings
 
-  A "mixed" day MUST NOT automatically require
-  historical + legal + judicial.
+  A mixed day does NOT automatically require
+  every possible source layer.
 */
 
 function determineRequiredLayers() {
@@ -363,11 +433,6 @@ function determineRequiredLayers() {
       ? constitutionalEntry.additional_sources
       : [];
 
-
-  /* ---------------------------------------------------------------
-     Historical
-  ---------------------------------------------------------------- */
-
   if (
     constitutionalType === "historical" ||
     additional.includes(
@@ -379,11 +444,6 @@ function determineRequiredLayers() {
       "historical"
     );
   }
-
-
-  /* ---------------------------------------------------------------
-     Legal
-  ---------------------------------------------------------------- */
 
   if (
     constitutionalType === "statutory" ||
@@ -397,11 +457,6 @@ function determineRequiredLayers() {
     );
   }
 
-
-  /* ---------------------------------------------------------------
-     Judicial
-  ---------------------------------------------------------------- */
-
   if (
     constitutionalType === "judicial" ||
     additional.includes(
@@ -413,11 +468,6 @@ function determineRequiredLayers() {
       "judicial"
     );
   }
-
-
-  /* ---------------------------------------------------------------
-     Official
-  ---------------------------------------------------------------- */
 
   if (
     additional.includes(
@@ -435,7 +485,6 @@ function determineRequiredLayers() {
   );
 }
 
-
 const requiredLayers =
   determineRequiredLayers();
 
@@ -449,13 +498,15 @@ function validateSyllabus() {
 
   const allDays =
     SYLLABUS.map(
-      item => Number(item.day)
+      item => Number(item?.day)
     );
 
   const uniqueDays =
     new Set(allDays);
 
-  if (uniqueDays.size !== 365) {
+  if (
+    uniqueDays.size !== 365
+  ) {
     errors.push(
       "syllabus.json contains duplicate day numbers"
     );
@@ -466,7 +517,9 @@ function validateSyllabus() {
     day <= 365;
     day++
   ) {
-    if (!uniqueDays.has(day)) {
+    if (
+      !uniqueDays.has(day)
+    ) {
       errors.push(
         `syllabus.json is missing day ${day}`
       );
@@ -518,49 +571,42 @@ function validateConstitutionalSource() {
     return errors;
   }
 
-  const allowedTypes =
-    new Set([
-      "constitutional",
-      "conceptual",
-      "historical",
-      "statutory",
-      "judicial",
-      "mixed"
-    ]);
+  if (!isPlainObject(entry)) {
+    errors.push(
+      `Day ${DAY}: constitutional source must be an object`
+    );
+
+    return errors;
+  }
 
   const sourceType =
     getSourceType(entry);
 
   if (
-    !allowedTypes.has(sourceType)
+    !ALLOWED_CONSTITUTIONAL_TYPES.has(
+      sourceType
+    )
   ) {
     errors.push(
       `Day ${DAY}: unsupported source_type "${sourceType}"`
     );
   }
 
-  if (
-    !Array.isArray(entry.articles)
+  for (
+    const field
+    of [
+      "articles",
+      "parts",
+      "references"
+    ]
   ) {
-    errors.push(
-      `Day ${DAY}: constitutional articles must be an array`
-    );
-  }
-
-  if (
-    !Array.isArray(entry.parts)
-  ) {
-    errors.push(
-      `Day ${DAY}: constitutional parts must be an array`
-    );
-  }
-
-  if (
-    !Array.isArray(entry.references)
-  ) {
-    errors.push(
-      `Day ${DAY}: constitutional references must be an array`
-    );
+    if (
+      !Array.isArray(entry[field])
+    ) {
+      errors.push(
+        `Day ${DAY}: constitutional ${field} must be an array`
+      );
+    }
   }
 
   if (
@@ -572,6 +618,34 @@ function validateConstitutionalSource() {
     errors.push(
       `Day ${DAY}: additional_sources must be an array`
     );
+  }
+
+  if (
+    Array.isArray(
+      entry.additional_sources
+    )
+  ) {
+    const allowedAdditional = new Set([
+      "historical-sources.json",
+      "legal-sources.json",
+      "judicial-sources.json",
+      "official-sources.json"
+    ]);
+
+    for (
+      const sourceFile
+      of entry.additional_sources
+    ) {
+      if (
+        !allowedAdditional.has(
+          sourceFile
+        )
+      ) {
+        errors.push(
+          `Day ${DAY}: unsupported additional source "${sourceFile}"`
+        );
+      }
+    }
   }
 
   return errors;
@@ -589,7 +663,9 @@ function validateRequiredSources() {
     const layer
     of requiredLayers
   ) {
-    if (!daySources[layer]) {
+    if (
+      !daySources[layer]
+    ) {
       errors.push(
         `Missing ${layer} source entry for day ${DAY}`
       );
@@ -611,6 +687,16 @@ function validateLegalSources() {
     daySources.legal;
 
   if (!entry) {
+    return errors;
+  }
+
+  if (
+    !isPlainObject(entry)
+  ) {
+    errors.push(
+      `Day ${DAY}: legal source entry must be an object`
+    );
+
     return errors;
   }
 
@@ -656,20 +742,9 @@ function validateLegalSources() {
     );
 
   const declared =
-    entry.legal_sources;
-
-  for (
-    const sourceId
-    of declared
-  ) {
-    if (
-      !validIds.has(sourceId)
-    ) {
-      errors.push(
-        `Day ${DAY}: unresolved legal source "${sourceId}"`
-      );
-    }
-  }
+    unique(
+      entry.legal_sources
+    );
 
   if (
     declared.length === 0
@@ -677,6 +752,21 @@ function validateLegalSources() {
     errors.push(
       `Day ${DAY}: legal source entry contains no resolved legal source`
     );
+  }
+
+  for (
+    const sourceId
+    of declared
+  ) {
+    if (
+      !validIds.has(
+        sourceId
+      )
+    ) {
+      errors.push(
+        `Day ${DAY}: unresolved legal source "${sourceId}"`
+      );
+    }
   }
 
   return errors;
@@ -694,6 +784,16 @@ function validateHistoricalSources() {
     daySources.historical;
 
   if (!entry) {
+    return errors;
+  }
+
+  if (
+    !isPlainObject(entry)
+  ) {
+    errors.push(
+      `Day ${DAY}: historical source entry must be an object`
+    );
+
     return errors;
   }
 
@@ -738,25 +838,32 @@ function validateHistoricalSources() {
         .filter(Boolean)
     );
 
+  const declared =
+    unique(
+      entry.sources
+    );
+
+  if (
+    declared.length === 0
+  ) {
+    errors.push(
+      `Day ${DAY}: historical source entry contains no resolved source`
+    );
+  }
+
   for (
     const sourceId
-    of entry.sources
+    of declared
   ) {
     if (
-      !validIds.has(sourceId)
+      !validIds.has(
+        sourceId
+      )
     ) {
       errors.push(
         `Day ${DAY}: unresolved historical source "${sourceId}"`
       );
     }
-  }
-
-  if (
-    entry.sources.length === 0
-  ) {
-    errors.push(
-      `Day ${DAY}: historical source entry contains no resolved source`
-    );
   }
 
   return errors;
@@ -777,15 +884,27 @@ function validateJudicialSources() {
     return errors;
   }
 
+  if (
+    !isPlainObject(entry)
+  ) {
+    errors.push(
+      `Day ${DAY}: judicial source entry must be an object`
+    );
+
+    return errors;
+  }
+
   const caseRegistry =
-    JUDICIAL.case_registry &&
-    typeof JUDICIAL.case_registry === "object"
+    isPlainObject(
+      JUDICIAL.case_registry
+    )
       ? JUDICIAL.case_registry
       : {};
 
   const doctrineRegistry =
-    JUDICIAL.doctrine_registry &&
-    typeof JUDICIAL.doctrine_registry === "object"
+    isPlainObject(
+      JUDICIAL.doctrine_registry
+    )
       ? JUDICIAL.doctrine_registry
       : {};
 
@@ -800,27 +919,43 @@ function validateJudicialSources() {
     );
   }
 
-  if (
-    Object.keys(caseRegistry).length === 0
-  ) {
-    errors.push(
-      `Day ${DAY}: judicial source registry contains no verified cases`
-    );
-  }
-
   const doctrines =
     Array.isArray(
       entry.doctrines
     )
-      ? entry.doctrines
+      ? unique(
+          entry.doctrines
+        )
       : [];
+
+  const cases =
+    Array.isArray(
+      entry.cases
+    )
+      ? unique(
+          entry.cases
+        )
+      : [];
+
+  if (
+    doctrines.length === 0 &&
+    cases.length === 0
+  ) {
+    errors.push(
+      `Day ${DAY}: judicial source must declare at least one verified doctrine or case`
+    );
+
+    return errors;
+  }
 
   for (
     const doctrineId
     of doctrines
   ) {
     const doctrine =
-      doctrineRegistry[doctrineId];
+      doctrineRegistry[
+        doctrineId
+      ];
 
     if (!doctrine) {
       errors.push(
@@ -830,11 +965,26 @@ function validateJudicialSources() {
       continue;
     }
 
+    if (
+      String(
+        doctrine.status || ""
+      )
+        .trim()
+        .toLowerCase() ===
+      "requires_verified_case_sources"
+    ) {
+      errors.push(
+        `Day ${DAY}: doctrine "${doctrineId}" requires verified case sources`
+      );
+    }
+
     const caseSources =
       Array.isArray(
         doctrine.case_sources
       )
-        ? doctrine.case_sources
+        ? unique(
+            doctrine.case_sources
+          )
         : [];
 
     if (
@@ -842,17 +992,6 @@ function validateJudicialSources() {
     ) {
       errors.push(
         `Day ${DAY}: doctrine "${doctrineId}" has no verified case sources`
-      );
-    }
-
-    if (
-      String(doctrine.status || "")
-        .trim()
-        .toLowerCase() ===
-      "requires_verified_case_sources"
-    ) {
-      errors.push(
-        `Day ${DAY}: doctrine "${doctrineId}" requires verified case sources`
       );
     }
 
@@ -867,6 +1006,19 @@ function validateJudicialSources() {
           `Day ${DAY}: doctrine "${doctrineId}" references missing case "${caseId}"`
         );
       }
+    }
+  }
+
+  for (
+    const caseId
+    of cases
+  ) {
+    if (
+      !caseRegistry[caseId]
+    ) {
+      errors.push(
+        `Day ${DAY}: unresolved judicial case "${caseId}"`
+      );
     }
   }
 
@@ -885,6 +1037,16 @@ function validateOfficialSources() {
     daySources.official;
 
   if (!entry) {
+    return errors;
+  }
+
+  if (
+    !isPlainObject(entry)
+  ) {
+    errors.push(
+      `Day ${DAY}: official source entry must be an object`
+    );
+
     return errors;
   }
 
@@ -912,14 +1074,28 @@ function validateOfficialSources() {
   }
 
   const registry =
-    OFFICIAL.institution_registry &&
-    typeof OFFICIAL.institution_registry === "object"
+    isPlainObject(
+      OFFICIAL.institution_registry
+    )
       ? OFFICIAL.institution_registry
       : {};
 
+  const declared =
+    unique(
+      entry.sources
+    );
+
+  if (
+    declared.length === 0
+  ) {
+    errors.push(
+      `Day ${DAY}: official source entry contains no resolved source`
+    );
+  }
+
   for (
     const sourceId
-    of entry.sources
+    of declared
   ) {
     if (
       !registry[sourceId]
@@ -928,14 +1104,6 @@ function validateOfficialSources() {
         `Day ${DAY}: unresolved official source "${sourceId}"`
       );
     }
-  }
-
-  if (
-    entry.sources.length === 0
-  ) {
-    errors.push(
-      `Day ${DAY}: official source entry contains no resolved source`
-    );
   }
 
   return errors;
@@ -951,7 +1119,10 @@ function validateDayRouting() {
 
   const dayMap =
     SOURCE_MAP.day_map &&
-    typeof SOURCE_MAP.day_map === "object"
+    typeof SOURCE_MAP.day_map === "object" &&
+    !Array.isArray(
+      SOURCE_MAP.day_map
+    )
       ? SOURCE_MAP.day_map
       : {};
 
@@ -959,6 +1130,16 @@ function validateDayRouting() {
     dayMap[String(DAY)];
 
   if (!explicit) {
+    return errors;
+  }
+
+  if (
+    !isPlainObject(explicit)
+  ) {
+    errors.push(
+      `Day ${DAY}: source-map day entry must be an object`
+    );
+
     return errors;
   }
 
@@ -974,15 +1155,6 @@ function validateDayRouting() {
     return errors;
   }
 
-  const allowedLayers =
-    new Set([
-      "constitutional",
-      "historical",
-      "legal",
-      "judicial",
-      "official"
-    ]);
-
   const declaredLayers =
     unique(
       explicit.sources
@@ -993,7 +1165,9 @@ function validateDayRouting() {
     of declaredLayers
   ) {
     if (
-      !allowedLayers.has(layer)
+      !ALLOWED_SOURCE_LAYERS.has(
+        layer
+      )
     ) {
       errors.push(
         `Day ${DAY}: source-map contains unsupported source layer "${layer}"`
@@ -1001,17 +1175,14 @@ function validateDayRouting() {
     }
   }
 
-  /*
-   * Every source-map layer must be required
-   * by authoritative routing.
-   */
-
   for (
     const layer
     of declaredLayers
   ) {
     if (
-      !requiredLayers.includes(layer)
+      !requiredLayers.includes(
+        layer
+      )
     ) {
       errors.push(
         `Day ${DAY}: source-map declares "${layer}" but authoritative routing does not require it`
@@ -1019,18 +1190,14 @@ function validateDayRouting() {
     }
   }
 
-  /*
-   * Every authoritative required layer must
-   * also appear in source-map when an explicit
-   * day mapping exists.
-   */
-
   for (
     const layer
     of requiredLayers
   ) {
     if (
-      !declaredLayers.includes(layer)
+      !declaredLayers.includes(
+        layer
+      )
     ) {
       errors.push(
         `Day ${DAY}: authoritative routing requires "${layer}" but source-map does not declare it`
@@ -1082,16 +1249,53 @@ if (
   }
 
   console.error("");
-
   console.error(
     `Day ${DAY} was NOT sent to the AI generator.`
   );
-
   console.error(
     "=========================================="
   );
 
   process.exit(1);
+}
+
+
+/* ==========================================================================
+   VALIDATION-ONLY MODE
+========================================================================== */
+
+if (VALIDATE_ONLY) {
+  console.log("");
+  console.log(
+    "=========================================="
+  );
+  console.log(
+    "CONSTITUTION 365 SOURCE VALIDATION"
+  );
+  console.log(
+    "=========================================="
+  );
+  console.log(
+    `Day: ${DAY}`
+  );
+  console.log(
+    `Title: ${syllabusEntry.title}`
+  );
+  console.log(
+    `Required sources: ${requiredLayers.join(", ")}`
+  );
+  console.log("");
+  console.log(
+    "All authoritative source validations passed."
+  );
+  console.log(
+    "No AI generation was performed."
+  );
+  console.log(
+    "=========================================="
+  );
+
+  process.exit(0);
 }
 
 
@@ -1213,40 +1417,36 @@ function buildSourceContext() {
   };
 }
 
-
 const SOURCE_CONTEXT =
   buildSourceContext();
 
 
 /* ==========================================================================
-   AI PROMPT
+   PROMPT
 ========================================================================== */
 
 const prompt = `
 
 You are creating Day ${DAY} of CONSTITUTION 365.
 
-CONSTITUTION 365 is a premium Telugu constitutional education program for ordinary people, students, workers, parents, professionals and senior citizens.
+This is a premium Telugu constitutional education program.
 
-The objective is to make the Constitution of India understandable, accurate, practical and memorable.
+The purpose is to help ordinary citizens understand the Constitution of India accurately, practically and clearly.
 
-This is not exam coaching.
+This is NOT exam coaching.
 
-This is not a coaching-centre answer sheet.
+This is NOT a generic law lesson.
 
-Write as an excellent Telugu constitutional educator.
+This is NOT a place to add facts from your own knowledge.
 
-Use natural, modern, grammatically correct Telugu.
-
-Do not translate English sentence-by-sentence.
-
-Explain ideas naturally in Telugu.
+You must stay strictly inside the supplied authoritative source context.
 
 --------------------------------------------------
-TODAY'S SYLLABUS
+TODAY'S AUTHORITATIVE SYLLABUS
 --------------------------------------------------
 
-Day: ${syllabusEntry.day}
+Day:
+${syllabusEntry.day}
 
 Title:
 ${syllabusEntry.title}
@@ -1270,117 +1470,233 @@ ${JSON.stringify(
 
 
 --------------------------------------------------
-SOURCE HIERARCHY
+SOURCE DISCIPLINE
 --------------------------------------------------
 
-1. The Constitution of India is the primary constitutional source.
+Treat the supplied sources as separate layers.
 
-2. Historical sources explain historical background.
+CONSTITUTIONAL:
+The Constitution of India itself.
 
-3. Legal sources explain ordinary legislation and statutory frameworks.
+HISTORICAL:
+Historical background only.
 
-4. Judicial sources explain judicial interpretation and constitutional doctrine.
+LEGAL:
+Ordinary legislation and statutory frameworks.
 
-5. Official sources explain current institutional information.
+JUDICIAL:
+Court interpretation and constitutional doctrine.
+
+OFFICIAL:
+Official institutional information.
+
+Never merge these categories.
+
+Never describe a statute as though it is constitutional text.
+
+Never describe a court judgment as though it is an Article of the Constitution.
+
+Never describe historical background as though it is a constitutional provision.
+
+Never describe an official institutional fact as though it is constitutional text.
 
 
 --------------------------------------------------
-ABSOLUTE ACCURACY RULES
+ABSOLUTE FACTUAL ACCURACY
 --------------------------------------------------
 
-Use ONLY the supplied authoritative source context.
+Use ONLY information supported by the supplied source context.
 
-Do NOT invent:
+Do NOT invent or infer:
 
-- constitutional Articles
+- Articles
 - Parts
 - Schedules
 - constitutional powers
 - constitutional procedures
 - constitutional institutions
-- historical facts
-- historical dates
-- historical quotations
-- Acts
-- sections
-- statutory procedures
+- statutory Acts
+- statutory sections
 - statutory penalties
 - statutory authorities
 - legal rights
+- historical dates
+- historical events
+- historical quotations
 - court cases
-- case citations
+- case names
+- citations
 - judgment dates
-- bench details
+- bench composition
 - judicial holdings
 - judicial quotations
+- institutional facts
 
-Do NOT present judicial interpretation as constitutional text.
+If a fact is not supported by the supplied sources, OMIT it.
 
-Do NOT present ordinary legislation as constitutional text.
+Do not fill a source gap from general knowledge.
 
-Do NOT present historical claims as constitutional provisions.
+Do not make a statement merely because it sounds legally reasonable.
 
-Do NOT present official institutional information as constitutional text.
+Do not add a legal claim merely to make the lesson more impressive.
 
-Do NOT silently fill source gaps with general knowledge.
+When the source only supports a general constitutional principle, explain only that principle.
 
-If a point is not supported by the supplied source context, do not introduce it.
+When the source does not establish a particular right, do not call it a constitutional right.
 
-Do not add legal details merely to make the lesson appear more sophisticated.
+When the source does not establish a particular statutory rule, do not state that rule.
 
-If the Constitution itself is sufficient for a point, explain the constitutional position directly.
+When judicial material is supplied, identify it as judicial interpretation.
 
-Where legislation is supplied, clearly distinguish:
-constitutional foundation
-from
-statutory framework.
+When statutory material is supplied, identify it as statutory law.
 
-Where judicial material is supplied, clearly distinguish:
-constitutional text
-from
-judicial interpretation.
 
-Where historical material is supplied, clearly distinguish:
-historical background
-from
-constitutional text.
+--------------------------------------------------
+VERY IMPORTANT LEGAL WRITING RULE
+--------------------------------------------------
+
+Do not make broad claims such as:
+
+"the Constitution gives everyone a right to vote"
+
+unless the supplied source specifically establishes that proposition.
+
+Do not say:
+
+"education, health and livelihood are all fundamental rights"
+
+unless the supplied source specifically establishes each proposition.
+
+Do not say:
+
+"every unconstitutional law automatically becomes void"
+
+unless the supplied source context specifically supports the exact formulation.
+
+Do not convert constitutional values, Directive Principles,
+fundamental rights, statutory rights, electoral rights,
+or judicially interpreted principles into one undifferentiated category.
+
+Use precise wording.
 
 
 --------------------------------------------------
 LESSON
 --------------------------------------------------
 
-Create one complete lesson about THIS day's topic only.
+Create one complete lesson ONLY about this day's syllabus topic.
 
-Explain the central idea deeply but simply.
+The lesson must:
 
-Start naturally.
+- explain the central idea clearly
+- remain faithful to the authoritative sources
+- use natural Telugu
+- be understandable to ordinary citizens
+- explain why the topic matters
+- use realistic examples only when supported
+- identify common misunderstandings
+- distinguish constitutional text from other source layers
 
-Use realistic everyday situations where genuinely useful.
+Do not use fictional legal situations that require unsupported legal conclusions.
 
-Do not use artificial drama.
-
-Do not create fictional constitutional facts.
-
-Give practical examples.
-
-Connect the subject to ordinary citizens.
-
-Explain:
-
-- what the idea means
-- why it matters
-- how it relates to ordinary citizens
-- common misunderstandings
-- what the authoritative sources actually establish
-
-Avoid unnecessary legal jargon.
-
-Whenever a legal term is necessary, explain it immediately in simple Telugu.
+Do not invent names, cases, dates or legal outcomes.
 
 Do not turn the lesson into exam notes.
 
-Do not repeat the title as filler.
+Do not repeat the title unnecessarily.
+
+Do not use unnecessary legal jargon.
+
+
+--------------------------------------------------
+EXAMPLES
+--------------------------------------------------
+
+Provide multiple practical examples.
+
+Every example must be directly supported by the authoritative source context.
+
+Do not create examples that introduce new legal facts.
+
+If an example would require a legal rule not present in the supplied sources, do not use that example.
+
+
+--------------------------------------------------
+MCQs
+--------------------------------------------------
+
+Create exactly 5 MCQs.
+
+Each MCQ must contain exactly 4 unique options.
+
+Exactly ONE option must be correct.
+
+The answer must exactly match one option.
+
+Every MCQ must be answerable from the supplied source context and lesson.
+
+Do not use outside legal knowledge.
+
+Do not make a question difficult by introducing an unsupported fact.
+
+Test understanding rather than memorization.
+
+Each explanation must explain why the selected option is correct.
+
+
+--------------------------------------------------
+MCQ QUALITY CONTROL
+--------------------------------------------------
+
+Before returning JSON, check every MCQ:
+
+1. Is the question supported by the supplied sources?
+2. Is there exactly one correct option?
+3. Does the answer exactly match an option?
+4. Are all four options unique?
+5. Does the explanation support the selected answer?
+6. Did the question accidentally introduce an unsupported Article, Act, case, right or procedure?
+
+If any answer is NO, rewrite that MCQ before returning the JSON.
+
+
+--------------------------------------------------
+LANGUAGE
+--------------------------------------------------
+
+The lesson content must be natural Telugu.
+
+Use Telugu script consistently.
+
+DO NOT use:
+
+- Chinese characters
+- Japanese characters
+- Korean characters
+- Devanagari characters
+- Bengali characters
+- Gujarati characters
+- Gurmukhi characters
+- Kannada characters
+- Malayalam characters
+- Tamil characters
+- Arabic characters
+- Hebrew characters
+- Cyrillic characters
+- Greek characters
+
+Do not accidentally mix another Indian or foreign script into Telugu.
+
+Do not use transliterated Telugu when natural Telugu is available.
+
+English may be used only for an unavoidable official name,
+technical term, abbreviation, or proper noun when genuinely necessary.
+
+Do not randomly mix English into Telugu sentences.
+
+Before returning the answer, inspect every lesson,
+example, MCQ, answer, explanation and reflection for
+foreign-script contamination.
 
 
 --------------------------------------------------
@@ -1389,52 +1705,48 @@ DO NOT MENTION
 
 Do not mention:
 
-- this prompt
 - AI
 - Groq
-- syllabus
+- this prompt
 - generation
 - source validation
+- source registry
 - internal files
-- source registries
 - internal implementation
+- syllabus processing
 
 
 --------------------------------------------------
-MCQs
+AUTHORITATIVE FIELDS
 --------------------------------------------------
 
-Create exactly 5 high-quality MCQs.
+The following values are authoritative and MUST NOT be creatively changed:
 
-Each MCQ must have exactly 4 options.
+day:
+${DAY}
 
-Each MCQ must have exactly ONE correct answer.
+title:
+${syllabusEntry.title}
 
-MCQs must be based strictly on the lesson and supplied authoritative sources.
+stage:
+${syllabusEntry.stage}
 
-Test:
+focus:
+${syllabusEntry.focus}
 
-- understanding
-- practical application
-- everyday situations
-- misconception checking
-
-Do not introduce unsupported facts merely to make a question difficult.
-
-Each answer explanation must clearly explain WHY the selected answer is correct.
+The program will restore these fields after generation.
 
 
 --------------------------------------------------
-LANGUAGE
+CONSTITUTIONAL REFERENCE
 --------------------------------------------------
 
-Everything should be in natural Telugu.
+Return constitutional_reference in the requested structure.
 
-English may be retained only where an official constitutional name or unavoidable technical term genuinely requires it.
+The program will restore the authoritative
+articles, parts and references after generation.
 
-Do not produce Telugu transliteration that makes the lesson unnatural.
-
-Use clear Telugu suitable for a broad Indian audience.
+Do not invent constitutional references.
 
 
 --------------------------------------------------
@@ -1443,7 +1755,9 @@ OUTPUT
 
 Return ONLY valid JSON.
 
-No Markdown fences.
+No Markdown.
+
+No code fences.
 
 No comments.
 
@@ -1476,26 +1790,7 @@ Use exactly this structure:
   "reflection": ""
 }
 
-
---------------------------------------------------
-IMPORTANT
---------------------------------------------------
-
-The constitutional_reference values must reproduce the supplied constitutional source exactly.
-
-Do not alter:
-
-- articles
-- parts
-- references
-
-The examples array must contain multiple useful examples.
-
-The reflection must be one meaningful real-life question.
-
-Ensure valid JSON escaping.
-
-No trailing commas.
+The JSON must be syntactically valid.
 
 `;
 
@@ -1504,7 +1799,9 @@ No trailing commas.
    GROQ CALL
 ========================================================================== */
 
-async function callGroq() {
+async function callGroq(
+  attempt
+) {
   const key =
     process.env.GROQ_API_KEY;
 
@@ -1514,230 +1811,363 @@ async function callGroq() {
     );
   }
 
-  let lastError;
+  const response =
+    await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
 
-  for (
-    let attempt = 1;
-    attempt <= 3;
-    attempt++
-  ) {
-    try {
-      const response =
-        await fetch(
-          "https://api.groq.com/openai/v1/chat/completions",
-          {
-            method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
 
-            headers: {
-              "Content-Type":
-                "application/json",
+          Authorization:
+            `Bearer ${key}`
+        },
 
-              Authorization:
-                `Bearer ${key}`
+        body:
+          JSON.stringify({
+            model:
+              process.env.GROQ_MODEL ||
+              "openai/gpt-oss-120b",
+
+            temperature:
+              0.20,
+
+            reasoning_effort:
+              "high",
+
+            max_tokens:
+              10000,
+
+            response_format: {
+              type: "json_object"
             },
 
-            body:
-              JSON.stringify({
-                model:
-                  process.env.GROQ_MODEL ||
-                  "openai/gpt-oss-120b",
+            messages: [
+              {
+                role: "system",
 
-                temperature:
-                  0.35,
+                content:
+                  "You are an exceptionally careful Telugu constitutional educator. Use only the supplied authoritative source context. Never invent constitutional, historical, statutory, judicial or institutional facts. Never mix foreign scripts into Telugu. Return only valid JSON."
+              },
 
-                reasoning_effort:
-                  "high",
+              {
+                role: "user",
 
-                max_tokens:
-                  10000,
-
-                response_format: {
-                  type: "json_object"
-                },
-
-                messages: [
-                  {
-                    role: "system",
-
-                    content:
-                      "You are an exceptionally careful constitutional educator and Telugu editor. Return only valid JSON. Never invent unsupported constitutional, legal, historical or judicial facts."
-                  },
-
-                  {
-                    role: "user",
-
-                    content:
-                      prompt
-                  }
-                ]
-              })
-          }
-        );
-
-      if (!response.ok) {
-        const body =
-          await response.text();
-
-        throw new Error(
-          `Groq HTTP ${response.status}: ${body}`
-        );
+                content:
+                  prompt
+              }
+            ]
+          })
       }
+    );
 
-      const json =
-        await response.json();
+  if (!response.ok) {
+    const body =
+      await response.text();
 
-      const content =
-        json?.choices?.[0]?.message?.content;
-
-      if (!content) {
-        throw new Error(
-          "Groq returned no content"
-        );
-      }
-
-      try {
-        return JSON.parse(
-          content
-        );
-      } catch (parseError) {
-        throw new Error(
-          `Groq returned invalid JSON: ${parseError.message}`
-        );
-      }
-
-    } catch (error) {
-      lastError =
-        error;
-
-      if (
-        attempt < 3
-      ) {
-        await new Promise(
-          resolve =>
-            setTimeout(
-              resolve,
-              2000 * attempt
-            )
-        );
-      }
-    }
+    throw new Error(
+      `Groq HTTP ${response.status}: ${body}`
+    );
   }
 
-  throw lastError;
+  const json =
+    await response.json();
+
+  const content =
+    json?.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(
+      "Groq returned no content"
+    );
+  }
+
+  try {
+    return JSON.parse(
+      content
+    );
+  } catch (error) {
+    throw new Error(
+      `Groq returned invalid JSON on attempt ${attempt}: ${error.message}`
+    );
+  }
 }
 
 
 /* ==========================================================================
-   TELUGU CONTENT VALIDATION
+   SCRIPT VALIDATION
 ========================================================================== */
 
-function containsTelugu(value) {
-  return (
-    typeof value === "string" &&
-    /[\u0C00-\u0C7F]/.test(value)
-  );
-}
+/*
+  Telugu Unicode block:
+  U+0C00 - U+0C7F
+
+  Allowed:
+  - Telugu
+  - ASCII letters only when unavoidable
+  - ASCII digits
+  - common punctuation
+  - whitespace
+  - common Unicode punctuation/numbers
+
+  Explicitly reject other major writing systems.
+*/
+
+const FORBIDDEN_SCRIPT_RANGES = [
+  /[\u0400-\u04FF]/, // Cyrillic
+  /[\u0370-\u03FF]/, // Greek
+  /[\u0590-\u05FF]/, // Hebrew
+  /[\u0600-\u06FF]/, // Arabic
+  /[\u0700-\u074F]/, // Syriac
+  /[\u0780-\u07BF]/, // Thaana
+  /[\u0900-\u097F]/, // Devanagari
+  /[\u0980-\u09FF]/, // Bengali
+  /[\u0A00-\u0A7F]/, // Gurmukhi
+  /[\u0A80-\u0AFF]/, // Gujarati
+  /[\u0B00-\u0B7F]/, // Odia
+  /[\u0B80-\u0BFF]/, // Tamil
+  /[\u0C80-\u0CFF]/, // Kannada
+  /[\u0D00-\u0D7F]/, // Malayalam
+  /[\u0D80-\u0DFF]/, // Sinhala
+  /[\u0E00-\u0E7F]/, // Thai
+  /[\u0E80-\u0EFF]/, // Lao
+  /[\u1000-\u109F]/, // Myanmar
+  /[\u1100-\u11FF]/, // Hangul Jamo
+  /[\u3040-\u30FF]/, // Hiragana/Katakana
+  /[\u3400-\u4DBF]/, // CJK Extension A
+  /[\u4E00-\u9FFF]/, // CJK Unified
+  /[\uAC00-\uD7AF]/, // Hangul
+  /[\uF900-\uFAFF]/, // CJK compatibility
+  /[\uFF66-\uFF9F]/  // Halfwidth Katakana
+];
 
 
-function validateTeluguContent(x) {
-  const errors = [];
+function findForbiddenScripts(
+  value
+) {
+  if (
+    typeof value !== "string"
+  ) {
+    return [];
+  }
 
-  const textFields = [
-    "title",
-    "stage",
-    "focus",
-    "lesson",
-    "why_it_matters",
-    "common_misunderstanding",
-    "reflection"
-  ];
+  const found = [];
 
   for (
-    const field
-    of textFields
+    const pattern
+    of FORBIDDEN_SCRIPT_RANGES
   ) {
     if (
-      typeof x[field] !== "string" ||
-      !containsTelugu(x[field])
+      pattern.test(value)
     ) {
-      errors.push(
-        `${field} must contain Telugu text`
+      found.push(
+        pattern.source
       );
     }
   }
 
+  return found;
+}
+
+
+function containsTelugu(
+  value
+) {
+  return (
+    typeof value === "string" &&
+    /[\u0C00-\u0C7F]/.test(
+      value
+    )
+  );
+}
+
+
+function validateTeluguString(
+  value,
+  fieldName
+) {
+  const errors = [];
+
   if (
-    Array.isArray(x.examples)
+    typeof value !== "string"
   ) {
+    errors.push(
+      `${fieldName} must be a string`
+    );
+
+    return errors;
+  }
+
+  if (
+    value.trim() === ""
+  ) {
+    errors.push(
+      `${fieldName} must not be empty`
+    );
+
+    return errors;
+  }
+
+  if (
+    !containsTelugu(value)
+  ) {
+    errors.push(
+      `${fieldName} must contain Telugu text`
+    );
+  }
+
+  const forbidden =
+    findForbiddenScripts(
+      value
+    );
+
+  if (
+    forbidden.length > 0
+  ) {
+    errors.push(
+      `${fieldName} contains unsupported foreign-script characters`
+    );
+  }
+
+  /*
+   * Detect replacement/corruption characters.
+   */
+
+  if (
+    value.includes("\uFFFD")
+  ) {
+    errors.push(
+      `${fieldName} contains Unicode replacement character`
+    );
+  }
+
+  /*
+   * Detect zero-width/control characters
+   * except normal whitespace.
+   */
+
+  if (
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(
+      value
+    )
+  ) {
+    errors.push(
+      `${fieldName} contains invalid control characters`
+    );
+  }
+
+  return errors;
+}
+
+
+function validateTeluguContent(
+  x
+) {
+  const errors = [];
+
+  for (
+    const field
+    of REQUIRED_TEXT_FIELDS
+  ) {
+    errors.push(
+      ...validateTeluguString(
+        x[field],
+        field
+      )
+    );
+  }
+
+  if (
+    !Array.isArray(x.examples)
+  ) {
+    errors.push(
+      "examples must be an array"
+    );
+  } else {
     x.examples.forEach(
-      (example, index) => {
-        if (
-          typeof example !== "string" ||
-          !containsTelugu(example)
-        ) {
-          errors.push(
-            `Example ${index + 1} must contain Telugu text`
-          );
-        }
+      (
+        example,
+        index
+      ) => {
+        errors.push(
+          ...validateTeluguString(
+            example,
+            `Example ${index + 1}`
+          )
+        );
       }
     );
   }
 
   if (
-    Array.isArray(x.mcqs)
+    !Array.isArray(x.mcqs)
   ) {
-    x.mcqs.forEach(
-      (mcq, index) => {
+    return errors;
+  }
 
-        if (
-          !containsTelugu(
-            mcq.question
-          )
-        ) {
-          errors.push(
-            `MCQ ${index + 1} question must contain Telugu text`
-          );
-        }
+  x.mcqs.forEach(
+    (
+      mcq,
+      index
+    ) => {
+      const n =
+        index + 1;
 
-        for (
-          const [optionIndex, option]
-          of (
-            Array.isArray(mcq.options)
-              ? mcq.options
-              : []
-          ).entries()
-        ) {
-          if (
-            !containsTelugu(option)
-          ) {
+      if (
+        !mcq ||
+        typeof mcq !== "object"
+      ) {
+        errors.push(
+          `MCQ ${n} must be an object`
+        );
+
+        return;
+      }
+
+      errors.push(
+        ...validateTeluguString(
+          mcq.question,
+          `MCQ ${n} question`
+        )
+      );
+
+      if (
+        Array.isArray(
+          mcq.options
+        )
+      ) {
+        mcq.options.forEach(
+          (
+            option,
+            optionIndex
+          ) => {
             errors.push(
-              `MCQ ${index + 1} option ${optionIndex + 1} must contain Telugu text`
+              ...validateTeluguString(
+                option,
+                `MCQ ${n} option ${optionIndex + 1}`
+              )
             );
           }
-        }
-
-        if (
-          !containsTelugu(
-            mcq.answer
-          )
-        ) {
-          errors.push(
-            `MCQ ${index + 1} answer must contain Telugu text`
-          );
-        }
-
-        if (
-          !containsTelugu(
-            mcq.explanation
-          )
-        ) {
-          errors.push(
-            `MCQ ${index + 1} explanation must contain Telugu text`
-          );
-        }
+        );
       }
-    );
-  }
+
+      errors.push(
+        ...validateTeluguString(
+          mcq.answer,
+          `MCQ ${n} answer`
+        )
+      );
+
+      errors.push(
+        ...validateTeluguString(
+          mcq.explanation,
+          `MCQ ${n} explanation`
+        )
+      );
+    }
+  );
 
   return errors;
 }
@@ -1747,10 +2177,13 @@ function validateTeluguContent(x) {
    GENERATED CONTENT VALIDATION
 ========================================================================== */
 
-function validateGeneratedContent(x) {
+function validateGeneratedContent(
+  x
+) {
   if (
     !x ||
-    typeof x !== "object"
+    typeof x !== "object" ||
+    Array.isArray(x)
   ) {
     throw new Error(
       "Generated result is not an object"
@@ -1765,18 +2198,28 @@ function validateGeneratedContent(x) {
     );
   }
 
-  if (
-    typeof x.title !== "string" ||
-    typeof x.stage !== "string" ||
-    typeof x.focus !== "string"
+  for (
+    const field
+    of [
+      "title",
+      "stage",
+      "focus",
+      "lesson",
+      "why_it_matters",
+      "common_misunderstanding",
+      "reflection"
+    ]
   ) {
-    throw new Error(
-      "Missing basic fields"
-    );
+    if (
+      typeof x[field] !== "string"
+    ) {
+      throw new Error(
+        `Missing or invalid field: ${field}`
+      );
+    }
   }
 
   if (
-    typeof x.lesson !== "string" ||
     x.lesson.trim().length < 500
   ) {
     throw new Error(
@@ -1785,16 +2228,35 @@ function validateGeneratedContent(x) {
   }
 
   if (
-    !Array.isArray(x.examples) ||
-    x.examples.length < 2
+    x.lesson.trim().length > 30000
   ) {
     throw new Error(
-      "At least 2 examples required"
+      "Lesson is excessively long"
+    );
+  }
+
+  if (
+    !Array.isArray(x.examples) ||
+    x.examples.length < 3
+  ) {
+    throw new Error(
+      "At least 3 examples are required"
+    );
+  }
+
+  if (
+    x.examples.length > 8
+  ) {
+    throw new Error(
+      "Too many examples"
     );
   }
 
   for (
-    const [index, example]
+    const [
+      index,
+      example
+    ]
     of x.examples.entries()
   ) {
     if (
@@ -1805,10 +2267,17 @@ function validateGeneratedContent(x) {
         `Example ${index + 1} is too short`
       );
     }
+
+    if (
+      example.trim().length > 2500
+    ) {
+      throw new Error(
+        `Example ${index + 1} is too long`
+      );
+    }
   }
 
   if (
-    typeof x.why_it_matters !== "string" ||
     x.why_it_matters.trim().length < 100
   ) {
     throw new Error(
@@ -1817,7 +2286,6 @@ function validateGeneratedContent(x) {
   }
 
   if (
-    typeof x.common_misunderstanding !== "string" ||
     x.common_misunderstanding.trim().length < 50
   ) {
     throw new Error(
@@ -1826,33 +2294,62 @@ function validateGeneratedContent(x) {
   }
 
   if (
+    x.reflection.trim().length < 20
+  ) {
+    throw new Error(
+      "Reflection is too short"
+    );
+  }
+
+  if (
     !Array.isArray(x.mcqs) ||
     x.mcqs.length !== 5
   ) {
     throw new Error(
-      "Exactly 5 MCQs required"
+      "Exactly 5 MCQs are required"
     );
   }
 
   x.mcqs.forEach(
-    (mcq, index) => {
+    (
+      mcq,
+      index
+    ) => {
+      const n =
+        index + 1;
+
       if (
         !mcq ||
-        typeof mcq.question !== "string" ||
-        !Array.isArray(mcq.options) ||
-        mcq.options.length !== 4 ||
-        typeof mcq.answer !== "string" ||
-        typeof mcq.explanation !== "string"
+        typeof mcq !== "object" ||
+        Array.isArray(mcq)
       ) {
         throw new Error(
-          `Invalid MCQ ${index + 1}`
+          `MCQ ${n} must be an object`
+        );
+      }
+
+      if (
+        typeof mcq.question !==
+          "string" ||
+        !Array.isArray(
+          mcq.options
+        ) ||
+        mcq.options.length !== 4 ||
+        typeof mcq.answer !==
+          "string" ||
+        typeof mcq.explanation !==
+          "string"
+      ) {
+        throw new Error(
+          `Invalid MCQ ${n}`
         );
       }
 
       const options =
         mcq.options.map(
           option =>
-            String(option).trim()
+            String(option)
+              .trim()
         );
 
       const answer =
@@ -1867,87 +2364,101 @@ function validateGeneratedContent(x) {
         )
       ) {
         throw new Error(
-          `MCQ ${index + 1}: empty option`
+          `MCQ ${n}: empty option`
         );
       }
 
       if (
-        new Set(options).size !== 4
+        new Set(options).size !==
+        4
       ) {
         throw new Error(
-          `MCQ ${index + 1}: options must be unique`
+          `MCQ ${n}: options must be unique`
         );
       }
 
       if (
-        !options.includes(answer)
+        !options.includes(
+          answer
+        )
       ) {
         throw new Error(
-          `MCQ ${index + 1}: answer is not one of the options`
+          `MCQ ${n}: answer is not exactly one of the options`
         );
       }
 
       if (
-        mcq.question.trim().length < 10
+        mcq.question.trim().length <
+        10
       ) {
         throw new Error(
-          `MCQ ${index + 1}: question is too short`
+          `MCQ ${n}: question is too short`
         );
       }
 
       if (
-        mcq.explanation.trim().length < 20
+        mcq.question.trim().length >
+        1500
       ) {
         throw new Error(
-          `MCQ ${index + 1}: explanation is too short`
+          `MCQ ${n}: question is too long`
+        );
+      }
+
+      if (
+        mcq.explanation.trim().length <
+        20
+      ) {
+        throw new Error(
+          `MCQ ${n}: explanation is too short`
         );
       }
     }
   );
 
   if (
-    !x.constitutional_reference ||
-    typeof x.constitutional_reference !==
-      "object"
+    !isPlainObject(
+      x.constitutional_reference
+    )
   ) {
     throw new Error(
       "Missing constitutional_reference"
     );
   }
 
-  if (
-    !Array.isArray(
-      x.constitutional_reference.articles
-    ) ||
-    !Array.isArray(
-      x.constitutional_reference.parts
-    ) ||
-    !Array.isArray(
-      x.constitutional_reference.references
-    )
+  for (
+    const field
+    of [
+      "articles",
+      "parts",
+      "references"
+    ]
   ) {
-    throw new Error(
-      "Invalid constitutional_reference structure"
-    );
-  }
-
-  if (
-    typeof x.reflection !== "string" ||
-    x.reflection.trim().length < 20
-  ) {
-    throw new Error(
-      "Reflection is missing or too short"
-    );
+    if (
+      !Array.isArray(
+        x.constitutional_reference[
+          field
+        ]
+      )
+    ) {
+      throw new Error(
+        `constitutional_reference.${field} must be an array`
+      );
+    }
   }
 
   const teluguErrors =
-    validateTeluguContent(x);
+    validateTeluguContent(
+      x
+    );
 
   if (
     teluguErrors.length > 0
   ) {
     throw new Error(
-      teluguErrors.join("; ")
+      teluguErrors.join(
+        "; "
+      )
     );
   }
 
@@ -1956,7 +2467,7 @@ function validateGeneratedContent(x) {
 
 
 /* ==========================================================================
-   RESTORE AUTHORITATIVE FIELDS
+   AUTHORITATIVE FIELD RESTORATION
 ========================================================================== */
 
 function restoreAuthoritativeFields(
@@ -1976,16 +2487,25 @@ function restoreAuthoritativeFields(
 
   generated.constitutional_reference = {
     articles:
-      constitutionalEntry.articles ||
-      [],
+      Array.isArray(
+        constitutionalEntry.articles
+      )
+        ? constitutionalEntry.articles
+        : [],
 
     parts:
-      constitutionalEntry.parts ||
-      [],
+      Array.isArray(
+        constitutionalEntry.parts
+      )
+        ? constitutionalEntry.parts
+        : [],
 
     references:
-      constitutionalEntry.references ||
-      []
+      Array.isArray(
+        constitutionalEntry.references
+      )
+        ? constitutionalEntry.references
+        : []
   };
 
   generated.source_metadata = {
@@ -2020,7 +2540,9 @@ function restoreAuthoritativeFields(
       Array.isArray(
         daySources.legal.legal_sources
       )
-        ? daySources.legal.legal_sources
+        ? unique(
+            daySources.legal.legal_sources
+          )
         : [],
 
     historical_source_ids:
@@ -2028,7 +2550,9 @@ function restoreAuthoritativeFields(
       Array.isArray(
         daySources.historical.sources
       )
-        ? daySources.historical.sources
+        ? unique(
+            daySources.historical.sources
+          )
         : [],
 
     judicial_doctrines:
@@ -2036,7 +2560,9 @@ function restoreAuthoritativeFields(
       Array.isArray(
         daySources.judicial.doctrines
       )
-        ? daySources.judicial.doctrines
+        ? unique(
+            daySources.judicial.doctrines
+          )
         : [],
 
     judicial_cases:
@@ -2044,7 +2570,9 @@ function restoreAuthoritativeFields(
       Array.isArray(
         daySources.judicial.cases
       )
-        ? daySources.judicial.cases
+        ? unique(
+            daySources.judicial.cases
+          )
         : [],
 
     official_source_ids:
@@ -2052,7 +2580,9 @@ function restoreAuthoritativeFields(
       Array.isArray(
         daySources.official.sources
       )
-        ? daySources.official.sources
+        ? unique(
+            daySources.official.sources
+          )
         : []
   };
 
@@ -2067,6 +2597,10 @@ function restoreAuthoritativeFields(
 function validateFinalOutput(
   output
 ) {
+  validateGeneratedContent(
+    output
+  );
+
   if (
     Number(output.day) !== DAY
   ) {
@@ -2158,9 +2692,8 @@ function validateFinalOutput(
   }
 
   if (
-    !output.source_metadata ||
-    !Array.isArray(
-      output.source_metadata.source_layers
+    !isPlainObject(
+      output.source_metadata
     )
   ) {
     throw new Error(
@@ -2168,14 +2701,19 @@ function validateFinalOutput(
     );
   }
 
-  const finalLayers =
-    output
-      .source_metadata
-      .source_layers;
+  if (
+    !Array.isArray(
+      output.source_metadata.source_layers
+    )
+  ) {
+    throw new Error(
+      "source_metadata.source_layers must be an array"
+    );
+  }
 
   if (
     JSON.stringify(
-      finalLayers
+      output.source_metadata.source_layers
     ) !==
     JSON.stringify(
       requiredLayers
@@ -2187,31 +2725,134 @@ function validateFinalOutput(
   }
 
   if (
-    !Array.isArray(output.mcqs) ||
-    output.mcqs.length !== 5
+    Number(
+      output.source_metadata.source_day
+    ) !== DAY
   ) {
     throw new Error(
-      "Final output must contain exactly 5 MCQs"
+      "Final source metadata day mismatch"
     );
   }
 
-  const finalTeluguErrors =
-    validateTeluguContent(
-      output
+  if (
+    output.source_metadata.source_status !==
+    "validated-before-generation"
+  ) {
+    throw new Error(
+      "Invalid source metadata status"
+    );
+  }
+
+  const expectedFiles =
+    requiredLayers.map(
+      layer =>
+        FILES[layer]
     );
 
   if (
-    finalTeluguErrors.length > 0
+    JSON.stringify(
+      output.source_metadata.source_files
+    ) !==
+    JSON.stringify(
+      expectedFiles
+    )
   ) {
     throw new Error(
-      finalTeluguErrors.join("; ")
+      "Final source metadata files do not match required layers"
     );
   }
 }
 
 
 /* ==========================================================================
-   GENERATION
+   RETRY DELAY
+========================================================================== */
+
+function sleep(
+  milliseconds
+) {
+  return new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        milliseconds
+      )
+  );
+}
+
+
+/* ==========================================================================
+   GENERATE AND VALIDATE
+========================================================================== */
+
+async function generateValidatedOutput() {
+  let lastError = null;
+
+  for (
+    let attempt = 1;
+    attempt <= MAX_GENERATION_ATTEMPTS;
+    attempt++
+  ) {
+    console.log(
+      `Generation attempt ${attempt}/${MAX_GENERATION_ATTEMPTS}`
+    );
+
+    try {
+      const generated =
+        await callGroq(
+          attempt
+        );
+
+      validateGeneratedContent(
+        generated
+      );
+
+      console.log(
+        "AI content validation passed."
+      );
+
+      const finalOutput =
+        restoreAuthoritativeFields(
+          generated
+        );
+
+      validateFinalOutput(
+        finalOutput
+      );
+
+      console.log(
+        "Final output validation passed."
+      );
+
+      return finalOutput;
+
+    } catch (error) {
+      lastError =
+        error;
+
+      console.error(
+        `Attempt ${attempt} failed: ${error.message}`
+      );
+
+      if (
+        attempt <
+        MAX_GENERATION_ATTEMPTS
+      ) {
+        await sleep(
+          2500 * attempt
+        );
+      }
+    }
+  }
+
+  throw new Error(
+    `Generation failed after ${MAX_GENERATION_ATTEMPTS} validated attempts: ${lastError?.message || "unknown error"}`
+  );
+}
+
+
+/* ==========================================================================
+   MAIN
 ========================================================================== */
 
 (async () => {
@@ -2256,30 +2897,25 @@ function validateFinalOutput(
   );
 
   console.log(
+    "Foreign-script protection enabled."
+  );
+
+  console.log(
+    "Strict constitutional accuracy rules enabled."
+  );
+
+  console.log(
+    "Validated generation retries enabled."
+  );
+
+  console.log("");
+
+  console.log(
     "Calling Groq..."
   );
 
-  const generated =
-    validateGeneratedContent(
-      await callGroq()
-    );
-
-  console.log(
-    "AI content validation passed."
-  );
-
   const finalOutput =
-    restoreAuthoritativeFields(
-      generated
-    );
-
-  validateFinalOutput(
-    finalOutput
-  );
-
-  console.log(
-    "Final output validation passed."
-  );
+    await generateValidatedOutput();
 
   const output =
     path.join(
@@ -2294,6 +2930,10 @@ function validateFinalOutput(
     }
   );
 
+  /*
+   * Write ONLY after all validation has passed.
+   */
+
   fs.writeFileSync(
     output,
     JSON.stringify(
@@ -2304,13 +2944,25 @@ function validateFinalOutput(
     "utf8"
   );
 
-  const written =
-    JSON.parse(
-      fs.readFileSync(
-        output,
-        "utf8"
-      )
+  /*
+   * Re-read from disk and validate again.
+   */
+
+  let written;
+
+  try {
+    written =
+      JSON.parse(
+        fs.readFileSync(
+          output,
+          "utf8"
+        )
+      );
+  } catch (error) {
+    throw new Error(
+      `Generated file is not valid JSON: ${error.message}`
     );
+  }
 
   validateFinalOutput(
     written
@@ -2340,6 +2992,18 @@ function validateFinalOutput(
 
   console.log(
     `Sources: ${requiredLayers.join(", ")}`
+  );
+
+  console.log(
+    "Foreign-script validation: PASSED"
+  );
+
+  console.log(
+    "Constitutional-reference validation: PASSED"
+  );
+
+  console.log(
+    "Source-provenance validation: PASSED"
   );
 
   console.log(
