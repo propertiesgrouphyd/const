@@ -1,4 +1,4 @@
-const fs=require("fs"),path=require("path");const DAY=Number(process.env.DAY||0),VALIDATE_ONLY=process.argv.includes("--validate"),ROOT=process.cwd(),DATA=path.join(ROOT,"data"),FILES={syllabus:"syllabus.json",sourceMap:"source-map.json",constitutional:"constitutional-sources.json",historical:"historical-sources.json",legal:"legal-sources.json",judicial:"judicial-sources.json",official:"official-sources.json"},ALLOWED_CONSTITUTIONAL_TYPES=new Set(["constitutional","conceptual","historical","statutory","judicial","mixed"]),ALLOWED_SOURCE_LAYERS=new Set(["constitutional","historical","legal","judicial","official"]),REQUIRED_TEXT_FIELDS=["title","stage","focus","lesson","why_it_matters","common_misunderstanding","reflection"],MAX_GENERATION_ATTEMPTS=4;
+const fs=require("fs"),path=require("path"),DAY=Number(process.env.DAY||0),VALIDATE_ONLY=process.argv.includes("--validate"),ROOT=process.cwd(),DATA=path.join(ROOT,"data"),FILES={syllabus:"syllabus.json",sourceMap:"source-map.json",constitutional:"constitutional-sources.json",historical:"historical-sources.json",legal:"legal-sources.json",judicial:"judicial-sources.json",official:"official-sources.json"},ALLOWED_CONSTITUTIONAL_TYPES=new Set(["constitutional","conceptual","historical","statutory","judicial","mixed"]),ALLOWED_SOURCE_LAYERS=new Set(["constitutional","historical","legal","judicial","official"]),REQUIRED_TEXT_FIELDS=["title","stage","focus","lesson","why_it_matters","common_misunderstanding","reflection"],MAX_GENERATION_ATTEMPTS=4;
 function loadJson(fileName){const filePath=path.join(DATA,fileName);if(!fs.existsSync(filePath))throw new Error(`Required source file not found: data/${fileName}`);try{return JSON.parse(fs.readFileSync(filePath,"utf8"))}catch(error){throw new Error(`Invalid JSON in data/${fileName}: ${error.message}`)}}
 if(!Number.isInteger(DAY)||DAY<1||DAY>365)throw new Error("DAY must be an integer between 1 and 365");
 const SYLLABUS=loadJson(FILES.syllabus),SOURCE_MAP=loadJson(FILES.sourceMap),CONSTITUTIONAL=loadJson(FILES.constitutional),HISTORICAL=loadJson(FILES.historical),LEGAL=loadJson(FILES.legal),JUDICIAL=loadJson(FILES.judicial),OFFICIAL=loadJson(FILES.official);
@@ -6,8 +6,10 @@ if(!Array.isArray(SYLLABUS))throw new Error("syllabus.json must contain an array
 if(SYLLABUS.length!==365)throw new Error(`syllabus.json must contain exactly 365 entries; found ${SYLLABUS.length}`);
 if(!CONSTITUTIONAL||typeof CONSTITUTIONAL!=="object"||Array.isArray(CONSTITUTIONAL)||!CONSTITUTIONAL.days||typeof CONSTITUTIONAL.days!=="object"||Array.isArray(CONSTITUTIONAL.days))throw new Error("constitutional-sources.json must contain a days object");
 if(!SOURCE_MAP||typeof SOURCE_MAP!=="object"||Array.isArray(SOURCE_MAP))throw new Error("source-map.json must contain an object");
-const syllabusEntry=SYLLABUS.find(item=>Number(item?.day)===DAY);if(!syllabusEntry)throw new Error(`Syllabus entry not found for day ${DAY}`);
-const constitutionalEntry=CONSTITUTIONAL.days[String(DAY)];if(!constitutionalEntry)throw new Error(`Constitutional source not found for day ${DAY}`);
+const syllabusEntry=SYLLABUS.find(item=>Number(item?.day)===DAY);
+if(!syllabusEntry)throw new Error(`Syllabus entry not found for day ${DAY}`);
+const constitutionalEntry=CONSTITUTIONAL.days[String(DAY)];
+if(!constitutionalEntry)throw new Error(`Constitutional source not found for day ${DAY}`);
 function getDaySource(container,day){if(!container||typeof container!=="object"||!container.days||typeof container.days!=="object"||Array.isArray(container.days))return null;return container.days[String(day)]||null}
 function getSourceType(entry){return String(entry?.source_type||"").trim().toLowerCase()}
 function unique(values){return[...new Set(values.filter(value=>value!==undefined&&value!==null&&String(value).trim()!=="").map(String))]}
@@ -27,18 +29,18 @@ function validateDayRouting(){const errors=[],dayMap=SOURCE_MAP.day_map&&typeof 
 const validationErrors=[...validateSourceMap(),...validateSyllabus(),...validateConstitutionalSource(),...validateRequiredSources(),...validateDayRouting(),...validateLegalSources(),...validateHistoricalSources(),...validateJudicialSources(),...validateOfficialSources()];
 if(validationErrors.length>0){console.error("");console.error("==========================================");console.error("SOURCE VALIDATION FAILED");console.error("==========================================");for(const error of validationErrors)console.error(`ERROR: ${error}`);console.error("");console.error(`Day ${DAY} was NOT sent to the AI generator.`);console.error("==========================================");process.exit(1)}
 if(VALIDATE_ONLY){console.log("");console.log("==========================================");console.log("CONSTITUTION 365 SOURCE VALIDATION");console.log("==========================================");console.log(`Day: ${DAY}`);console.log(`Title: ${syllabusEntry.title}`);console.log(`Required sources: ${requiredLayers.join(", ")}`);console.log("");console.log("All authoritative source validations passed.");console.log("No AI generation was performed.");console.log("==========================================");process.exit(0)}
-function buildSourceContext(){return{constitutional:{source_type:constitutionalEntry.source_type||null,articles:constitutionalEntry.articles||[],parts:constitutionalEntry.parts||[],references:constitutionalEntry.references||[]},historical:daySources.historical?{sources:daySources.historical.sources||[],historical_focus:daySources.historical.historical_focus||[],use:daySources.historical.use||"",note:daySources.historical.note||""}:null,legal:daySources.legal?{legal_sources:daySources.legal.legal_sources||[],articles:daySources.legal.articles||[],parts:daySources.legal.parts||[],references:daySources.legal.references||[],coverage:daySources.legal.coverage||"",note:daySources.legal.note||""}:null,judicial:daySources.judicial?{status:daySources.judicial.status||null,doctrines:daySources.judicial.doctrines||[],cases:daySources.judicial.cases||[],references:daySources.judicial.references||[],use:daySources.judicial.use||""}:null,official:daySources.official?{sources:daySources.official.sources||[],references:daySources.official.references||[],use:daySources.official.use||""}:null}}
+function buildSourceContext(){const legalIds=daySources.legal&&Array.isArray(daySources.legal.legal_sources)?unique(daySources.legal.legal_sources):[],historicalIds=daySources.historical&&Array.isArray(daySources.historical.sources)?unique(daySources.historical.sources):[],judicialDoctrineIds=daySources.judicial&&Array.isArray(daySources.judicial.doctrines)?unique(daySources.judicial.doctrines):[],judicialCaseIds=daySources.judicial&&Array.isArray(daySources.judicial.cases)?unique(daySources.judicial.cases):[],officialIds=daySources.official&&Array.isArray(daySources.official.sources)?unique(daySources.official.sources):[],legalRegistry=Array.isArray(LEGAL.primary_legal_sources)?LEGAL.primary_legal_sources:[],historicalRegistry=Array.isArray(HISTORICAL.primary_historical_sources)?HISTORICAL.primary_historical_sources:[],caseRegistry=isPlainObject(JUDICIAL.case_registry)?JUDICIAL.case_registry:{},doctrineRegistry=isPlainObject(JUDICIAL.doctrine_registry)?JUDICIAL.doctrine_registry:{},officialRegistry=isPlainObject(OFFICIAL.institution_registry)?OFFICIAL.institution_registry:{};return{constitutional:{source_type:constitutionalEntry.source_type||null,articles:constitutionalEntry.articles||[],parts:constitutionalEntry.parts||[],references:constitutionalEntry.references||[]},historical:daySources.historical?{sources:historicalIds,source_details:historicalRegistry.filter(source=>historicalIds.includes(String(source?.id))),historical_focus:daySources.historical.historical_focus||[],use:daySources.historical.use||"",note:daySources.historical.note||""}:null,legal:daySources.legal?{legal_sources:legalIds,source_details:legalRegistry.filter(source=>legalIds.includes(String(source?.id))),articles:daySources.legal.articles||[],parts:daySources.legal.parts||[],references:daySources.legal.references||[],coverage:daySources.legal.coverage||"",note:daySources.legal.note||""}:null,judicial:daySources.judicial?{status:daySources.judicial.status||null,doctrines:judicialDoctrineIds,doctrine_details:Object.fromEntries(judicialDoctrineIds.filter(id=>doctrineRegistry[id]).map(id=>[id,doctrineRegistry[id]])),cases:judicialCaseIds,case_details:Object.fromEntries(judicialCaseIds.filter(id=>caseRegistry[id]).map(id=>[id,caseRegistry[id]])),references:daySources.judicial.references||[],use:daySources.judicial.use||""}:null,official:daySources.official?{sources:officialIds,source_details:Object.fromEntries(officialIds.filter(id=>officialRegistry[id]).map(id=>[id,officialRegistry[id]])),references:daySources.official.references||[],use:daySources.official.use||""}:null}}
 const SOURCE_CONTEXT=buildSourceContext();
 const prompt=`
-You are creating Day ${DAY} of CONSTITUTION 365, a premium Telugu constitutional education program for ordinary citizens, students, workers, parents, professionals and senior citizens.
+Create Day ${DAY} of Vidhwaan Constitution 365, Telugu edition.
 
-The purpose is to make the Constitution of India understandable, practical, human, memorable and useful in real life. This is NOT exam coaching, NOT a textbook, NOT a coaching-centre answer sheet and NOT a list of legal statements.
+TWO NON-NEGOTIABLE GOALS:
+1. LEGAL/FACTUAL ACCURACY: every constitutional, statutory, judicial, historical and institutional claim must be supported by the AUTHORITATIVE SOURCE CONTEXT below.
+2. HUMAN CLARITY: a person with no legal background must understand the lesson easily.
 
-Write as an excellent Telugu constitutional educator speaking clearly to a real person who may know nothing about constitutional law.
+ACCURACY ALWAYS BEATS COMPLETENESS, DRAMA, EXAMPLES OR LENGTH. If the supplied sources do not establish a fact, OMIT it. Never guess, infer, import outside legal knowledge, or fill a source gap from memory.
 
-Use natural, modern, grammatically correct Telugu. Do not translate English sentence-by-sentence. Explain ideas naturally.
-
-TODAY'S AUTHORITATIVE SYLLABUS:
+SYLLABUS:
 Day: ${syllabusEntry.day}
 Title: ${syllabusEntry.title}
 Stage: ${syllabusEntry.stage}
@@ -47,186 +49,83 @@ Focus: ${syllabusEntry.focus}
 AUTHORITATIVE SOURCE CONTEXT:
 ${JSON.stringify(SOURCE_CONTEXT,null,2)}
 
-SOURCE DISCIPLINE:
-Treat every supplied source layer separately.
+SOURCE BOUNDARIES:
 CONSTITUTIONAL = Constitution of India itself.
 HISTORICAL = historical background only.
-LEGAL = ordinary legislation and statutory frameworks.
-JUDICIAL = court interpretation and constitutional doctrine.
-OFFICIAL = official institutional information.
-Never merge these categories. Never describe a statute as constitutional text. Never describe a judgment as an Article. Never describe historical background as a constitutional provision. Never describe an official institutional fact as constitutional text.
+LEGAL = ordinary legislation/statutory framework.
+JUDICIAL = court interpretation/constitutional doctrine.
+OFFICIAL = verified official institutional information.
+Never merge layers. Never call a statute constitutional text, a judgment an Article, history a constitutional provision, or judicial interpretation constitutional text.
 
-ABSOLUTE FACTUAL ACCURACY:
-Use ONLY information supported by the supplied authoritative source context.
-Do NOT invent or infer Articles, Parts, Schedules, constitutional powers, constitutional procedures, constitutional institutions, Acts, sections, statutory procedures, statutory penalties, statutory authorities, legal rights, historical dates, historical events, historical quotations, court cases, case names, citations, judgment dates, bench composition, judicial holdings, judicial quotations or institutional facts.
-If a fact is not supported by the supplied sources, OMIT it.
-Do not fill source gaps from general knowledge.
-Do not add a legal claim merely to make the lesson sound sophisticated.
-When the source supports only a general principle, explain only that principle.
-Do not turn constitutional values, Directive Principles, Fundamental Rights, statutory rights, electoral rules or judicially interpreted principles into one undifferentiated category.
+SOURCE-CLOSED LEGAL ACCURACY:
+Use ONLY the supplied source context. Do not invent/infer Articles, Parts, Schedules, powers, procedures, institutions, Acts, sections, rules, penalties, authorities, rights, duties, remedies, dates, events, quotations, cases, citations, benches, holdings or institutional facts.
+Do not assume a legal consequence because it sounds logical.
+Do not turn a value/principle into an enforceable right unless the source establishes that exact proposition.
+Do not say a person can file, claim, challenge, demand, obtain, enforce, appeal, recover, complain or receive a remedy unless the source supports that exact conclusion.
+Do not say a government body must, may, cannot, is required to or is empowered to act unless the source establishes it.
+Do not make unsupported broad claims about education, health, livelihood, employment, voting, welfare, equality or public services.
+If the source gives only a conceptual reference, remain conceptual and do not create legal outcomes.
+A source ID/reference is not evidence of facts beyond its supplied metadata.
 
-VERY IMPORTANT LEGAL PRECISION:
-Do not make broad claims such as saying that the Constitution gives everyone a particular right unless the supplied source specifically establishes that proposition.
-Do not label education, health, livelihood, voting or any other subject as a constitutional right unless the supplied source specifically supports that exact characterization.
-Do not state that every unconstitutional law automatically becomes void unless the supplied source specifically supports the exact formulation.
-Use precise wording at all times.
+LESSON:
+Write one complete lesson only about today's topic. Explain what it means, what the source actually establishes, why it matters to the extent supported, how an ordinary person can understand it, and one genuine misunderstanding.
+Use natural flow such as:
+IDEA -> SIMPLE EXPLANATION -> SAFE ILLUSTRATION -> CLEAR CONNECTION -> AUTHORITATIVE POSITION.
+Do not mechanically repeat the pattern.
 
-LESSON — HUMAN, PRACTICAL AND EASY TO UNDERSTAND:
-Create one complete lesson ONLY about this day's topic.
+CLARITY:
+Use natural, modern Telugu. Prefer clear short/medium sentences. Explain technical terms immediately in plain Telugu. Do not write like a statute, textbook, examination guide or coaching centre. Do not sacrifice legal precision for simplicity.
 
-The reader may have no legal background. Explain the topic so an ordinary person can understand it without exam preparation or prior knowledge.
-
-The lesson must feel like an excellent person is personally explaining the Constitution clearly to another human being.
-
-Do not simply state a constitutional principle. Explain it.
-
-Whenever appropriate, naturally use this teaching flow:
-IDEA -> SIMPLE EXPLANATION -> REALISTIC EVERYDAY SITUATION -> WHAT HAPPENS IN THAT SITUATION -> HOW IT CONNECTS TO TODAY'S TOPIC -> WHAT THE AUTHORITATIVE SOURCE ACTUALLY ESTABLISHES.
-Do not mechanically repeat this pattern.
-
-Explain clearly:
-- what the idea means;
-- why it matters;
-- what the Constitution actually establishes;
-- how an ordinary person can understand the idea in daily life;
-- what people commonly misunderstand;
-- what the supplied authoritative sources actually establish.
-
-Start naturally. Do not use the same opening every day. Do not repeat the title as filler. Do not fill space with repeated statements.
-
-REAL-LIFE EXAMPLES:
-Examples are extremely important.
-
-Do NOT treat a restatement of the constitutional principle as an example.
-
-An example must describe a recognisable situation that a real person can understand. A useful example normally contains a clear person, group or ordinary situation, something that happens or could happen, the constitutional question or idea involved, and a clear explanation of how that situation connects to today's topic.
-
-Examples may involve ordinary situations such as a family, student, worker, parent, professional, citizen dealing with a public institution, people living in different communities, a workplace, school, public service, local community or another ordinary human situation — BUT ONLY when the supplied authoritative sources support the constitutional point being illustrated.
-
-Do not invent a legal right, government power, procedure, penalty, case outcome or other legal fact merely to create an interesting example.
-
-A statement such as "this principle is important to citizens" is NOT an example.
-A statement such as "this shows why the Constitution matters" is NOT an example.
-A vague hypothetical with no clear situation is NOT an example.
-
-Prefer examples that let the reader picture the situation immediately and then understand exactly why it relates to the day's topic.
-
-EXAMPLE VARIETY:
-Provide 3 to 8 genuinely useful examples.
-Do not make every example a variation of the same sentence.
-Where the topic permits, use different perspectives such as an ordinary citizen, family or community, student or young person, worker or professional, or interaction with a public institution.
-Do not force variety when the authoritative source does not support it.
-Quality is more important than quantity, but never provide fewer than 3 examples.
+EXAMPLES — CRITICAL:
+Every example must be either:
+A. a source-supported real-life constitutional/legal scenario whose legal conclusion is directly established by the supplied source; OR
+B. a clearly identified everyday analogy used only to explain an abstract idea.
+An analogy is NOT legally equivalent to the Constitution and must not contain an invented right, remedy, duty, government power, procedure or legal outcome.
+A restatement, vague hypothetical, generic statement of importance, or realistic story with an invented legal result is NOT an example.
+For every example silently ask: what exact source-supported idea does it illustrate, what legal conclusion am I making, and where is that conclusion supported? If support is unclear, remove the legal conclusion or use a safe analogy.
+Never invent a citizen remedy, government procedure, workplace/school/hospital obligation or public-service rule.
+Provide 3-8 useful examples when possible. If the source does not support multiple legal situations, use safe analogies rather than inventing facts.
 
 COMPARISONS:
-When a comparison makes the concept easier to understand, use one naturally.
-Useful comparisons may distinguish what people commonly assume from what the Constitution actually establishes, one situation from another, constitutional text from statutory law, or constitutional text from judicial interpretation.
-Do not create decorative comparisons.
+Use only when they clarify: assumption vs authoritative position, constitutional text vs statute, constitutional text vs judicial interpretation, or history vs constitutional rule.
+
+WHY IT MATTERS:
+Explain educational/practical value without inventing legal consequences.
 
 COMMON MISUNDERSTANDING:
-Identify a genuine misunderstanding that an ordinary reader could reasonably have about today's topic.
-Clearly distinguish:
-WHAT PEOPLE MAY THINK
-from
-WHAT THE SUPPLIED AUTHORITATIVE SOURCES ACTUALLY ESTABLISH.
-Do not use a generic sentence merely to satisfy this field.
+State a genuine misunderstanding and clearly correct it using the supplied source.
 
-PRACTICAL VALUE:
-The reader should finish with understanding that remains useful outside an examination.
-Do not give legal advice.
-Do not tell the reader what legal action to take unless the supplied sources specifically support that information.
-Help the reader recognise and understand today's constitutional idea in ordinary life.
-
-NATURAL WRITING:
-Use natural Telugu.
-Vary sentence length and paragraph structure.
-Do not use the same opening pattern every day.
-Do not repeatedly write generic phrases such as "ఇది చాలా ముఖ్యమైనది" or "ప్రతి పౌరుడికి ఇది ముఖ్యమైనది" unless genuinely necessary.
-Do not make every paragraph sound like a definition.
-Do not make every example begin with the same phrase.
-Do not turn the lesson into coaching-centre material.
-Do not use artificial drama.
-Do not create fictional constitutional facts.
-Do not create stories whose legal outcome is unsupported.
-
-SOURCE-SAFE EXAMPLES:
-A realistic situation is allowed only when the constitutional or legal conclusion drawn from it is supported by the supplied sources.
-If a useful example would require an unsupported legal conclusion, DO NOT use that example.
-Use a simpler example that can be safely supported.
-
-LEGAL SOURCE LAYERING:
-When legislation is supplied, clearly distinguish constitutional foundation from statutory framework.
-When judicial material is supplied, clearly distinguish constitutional text from judicial interpretation.
-When historical material is supplied, clearly distinguish historical background from constitutional text.
-When official material is supplied, clearly distinguish official institutional information from constitutional text.
-
-FINAL LESSON QUALITY TEST:
-Before returning the JSON, silently check:
-1. Could a person with no legal background understand this?
-2. Does the lesson explain rather than merely state?
-3. Are the examples actual situations rather than restated principles?
-4. Does each example clearly help explain today's topic?
-5. Are examples varied where appropriate?
-6. Is the connection between each example and the constitutional idea clearly explained?
-7. Is the common misunderstanding genuine and clearly corrected?
-8. Is the lesson useful outside an examination?
-9. Does anything sound like coaching-centre material?
-10. Did any example introduce an unsupported legal fact?
-If any answer to 1-9 is NO, improve the lesson before returning it.
-If answer 10 is YES, remove or rewrite that example.
-
-DO NOT MENTION:
-Do not mention this prompt, AI, Groq, syllabus, generation, source validation, internal files, source registries or internal implementation.
-
-CONTENT LENGTH REQUIREMENTS:
-LESSON: 500 to 30000 characters. Complete, clear and educational. Do not repeat sentences to reach the minimum.
-EXAMPLES: 3 to 8 items. Each 20 to 2500 characters. Every example must be concrete, useful and directly supported by the authoritative source context.
-WHY IT MATTERS: at least 100 characters and must explain practical importance rather than repeat the lesson.
-COMMON MISUNDERSTANDING: at least 50 characters and must identify a genuine misunderstanding and correct it.
-REFLECTION: at least 20 characters and should be one meaningful real-life question.
+REFLECTION:
+Ask one meaningful understanding question, not a legal-action instruction.
 
 MCQs:
-Create EXACTLY 5 high-quality multiple-choice questions.
-Each MCQ must contain EXACTLY 4 unique options and exactly ONE correct answer.
-The answer must exactly match one option.
-Every MCQ must be answerable from the supplied source context and lesson.
-Do not use outside legal knowledge.
-Do not make questions difficult merely by changing terminology or asking obscure facts.
-Test understanding rather than memorisation.
-Use a balanced mixture of direct understanding, realistic everyday application, misconception checking and deeper comparison or reasoning.
-Where the topic permits, at least 2 questions should use realistic situations.
-At least 1 question should test a common misunderstanding.
-At least 1 question should test the central concept directly.
-Each explanation must explain WHY the selected option is correct. Where useful, briefly explain why a tempting alternative is wrong.
-Do not introduce an unsupported Article, Act, case, right, procedure or legal conclusion merely to make an MCQ difficult.
+Exactly 5. Exactly 4 unique options each. Exactly one correct answer. Answer must exactly match an option.
+Every question must be answerable from the supplied sources and lesson.
+Never put an unsupported legal premise inside a question.
+If the topic/source is conceptual, test conceptual understanding rather than inventing a legal dispute.
+At least 1 central-concept question and 1 genuine-misunderstanding question; use ordinary-life situations only when source-supported.
+Explanations must explain WHY the answer is correct from the supplied source.
+Never invent an Article, Act, case, right, remedy, procedure or institutional power to make a question difficult.
 
-MCQ QUALITY CONTROL:
-Before returning JSON, silently check every MCQ:
-1. Is the question supported by the supplied sources?
-2. Is there exactly one correct option?
-3. Does the answer exactly match one option?
-4. Are all four options unique?
-5. Does the explanation explain the reasoning?
-6. Did the question introduce an unsupported legal fact?
-If any answer is NO, rewrite that MCQ.
+FINAL ACCURACY AUDIT:
+Before output, check every factual sentence, example, option and explanation:
+- directly supported by supplied sources?
+- no invented legal consequence?
+- correct source layer?
+- analogy clearly an analogy?
+If not, rewrite or remove it.
+
+FINAL CLARITY AUDIT:
+Could a person with no legal background understand it? Is the main idea obvious? Are technical terms explained? Are examples real teaching examples? Is Telugu natural? Is there unnecessary repetition?
+If accuracy and simplicity conflict, preserve the legally supported meaning and simplify the wording.
 
 LANGUAGE:
-This is the Telugu edition of Vidhwaan Constitution 365.
-All educational content generated by the model must be natural Telugu using Telugu script.
-This applies to lesson, examples, why_it_matters, common_misunderstanding, MCQ questions, options, answers, explanations and reflection.
-Do NOT use English alphabet characters merely for convenience.
-Do NOT use transliterated Telugu.
-Do NOT randomly mix English words into Telugu sentences.
-Use Telugu equivalents whenever available.
-Do not use foreign scripts.
-Official identifiers restored by the application must not be repeated unnecessarily inside educational prose.
+All educational fields must be natural Telugu in Telugu script. No English alphabet, transliterated Telugu, random English or foreign scripts. Normal Telugu punctuation, spaces, tabs and paragraph line breaks are allowed.
 
-OUTPUT:
-Return ONLY valid JSON.
-No Markdown fences.
-No comments.
-No trailing commas.
-Use exactly this structure:
+LENGTH:
+Lesson 500-30000 chars; examples 3-8, each 20-2500 chars; why_it_matters >=100; common_misunderstanding >=50; reflection >=20.
+
+OUTPUT ONLY VALID JSON, with no Markdown, comments or trailing commas:
 {
   "day": ${DAY},
   "title": "",
@@ -236,37 +135,19 @@ Use exactly this structure:
   "examples": [],
   "why_it_matters": "",
   "common_misunderstanding": "",
-  "mcqs": [
-    {
-      "question": "",
-      "options": ["", "", "", ""],
-      "answer": "",
-      "explanation": ""
-    }
-  ],
-  "constitutional_reference": {
-    "articles": [],
-    "parts": [],
-    "references": []
-  },
+  "mcqs": [{"question":"","options":["","","",""],"answer":"","explanation":""}],
+  "constitutional_reference": {"articles":[],"parts":[],"references":[]},
   "reflection": ""
 }
-
-IMPORTANT:
-The constitutional_reference values must reproduce the supplied constitutional source exactly.
-Do not alter articles, parts or references.
-The application will restore authoritative fields after generation, so do not attempt to change their meaning.
-Do not put internal source identifiers or implementation details into educational prose.
-Return valid JSON only.
+The constitutional_reference values must reproduce the supplied constitutional source exactly. Do not alter them. The application restores authoritative fields afterward.
 `;
-async function callGroq(attempt){const key=process.env.GROQ_API_KEY;if(!key)throw new Error("GROQ_API_KEY is missing");try{const model=process.env.GROQ_MODEL||"openai/gpt-oss-120b",response=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${key}`},body:JSON.stringify({model,temperature:.2,reasoning_effort:"medium",max_completion_tokens:20000,response_format:{type:"json_object"},messages:[{role:"system",content:"You are an exceptionally careful constitutional educator, Telugu editor and factual verifier. Return only valid JSON. Follow the requested structure exactly. Never invent legal facts."},{role:"user",content:prompt}]})});let body=null;try{body=await response.json()}catch{}if(!response.ok){const retryAfter=response.headers.get("retry-after");const detail=body?.error?.message||body?.error?.code||JSON.stringify(body)||"Unknown Groq error";const error=new Error(`Groq HTTP ${response.status}: ${detail}`);error.status=response.status;error.retryAfter=retryAfter;throw error}const message=body?.choices?.[0]?.message;if(message?.refusal)throw new Error(`Groq refusal: ${message.refusal}`);const content=message?.content;if(typeof content!=="string"||!content.trim())throw new Error("Groq returned empty content");try{return JSON.parse(content)}catch(error){throw new Error(`Groq returned invalid JSON: ${error.message}`)}}catch(error){throw error}}
+async function callGroq(attempt){const key=process.env.GROQ_API_KEY;if(!key)throw new Error("GROQ_API_KEY is missing");try{const model=process.env.GROQ_MODEL||"openai/gpt-oss-120b",response=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${key}`},body:JSON.stringify({model,temperature:.2,reasoning_effort:"medium",max_completion_tokens:20000,response_format:{type:"json_object"},messages:[{role:"system",content:"You are an exceptionally careful constitutional educator, Telugu editor and legal-factual verifier. Use only the supplied authoritative source context. Never invent, infer or assume a legal fact, remedy, right, duty, procedure, power, case holding or institutional fact. If the source does not establish a point, omit it or keep it explicitly conceptual. Return only valid JSON and follow the structure exactly."},{role:"user",content:prompt}]})});let body=null;try{body=await response.json()}catch{}if(!response.ok){const retryAfter=response.headers.get("retry-after");const detail=body?.error?.message||body?.error?.code||JSON.stringify(body)||"Unknown Groq error";const error=new Error(`Groq HTTP ${response.status}: ${detail}`);error.status=response.status;error.retryAfter=retryAfter;throw error}const message=body?.choices?.[0]?.message;if(message?.refusal)throw new Error(`Groq refusal: ${message.refusal}`);const content=message?.content;if(typeof content!=="string"||!content.trim())throw new Error("Groq returned empty content");try{return JSON.parse(content)}catch(error){throw new Error(`Groq returned invalid JSON: ${error.message}`)}}catch(error){throw error}}
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 function getRetryDelay(error,attempt){const retryAfter=Number(error?.retryAfter);if(Number.isFinite(retryAfter)&&retryAfter>=0)return Math.min(retryAfter*1000,30000);return Math.min(2500*attempt,30000)}
 function sanitizeGeneratedText(value){if(typeof value!=="string")return value;return value.normalize("NFC").replace(/\uFFFD/g,"").replace(/\\/g,"").replace(/\u0000/g,"").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g,"").trim()}
 function sanitizeGeneratedObject(x){if(!x||typeof x!=="object")return x;for(const field of REQUIRED_TEXT_FIELDS)if(typeof x[field]==="string")x[field]=sanitizeGeneratedText(x[field]);if(Array.isArray(x.examples))x.examples=x.examples.map(sanitizeGeneratedText);if(Array.isArray(x.mcqs))for(const mcq of x.mcqs){if(!mcq||typeof mcq!=="object")continue;for(const field of["question","answer","explanation"])if(typeof mcq[field]==="string")mcq[field]=sanitizeGeneratedText(mcq[field]);if(Array.isArray(mcq.options))mcq.options=mcq.options.map(sanitizeGeneratedText)}return x}
 function containsTelugu(value){return typeof value==="string"&&/[\u0C00-\u0C7F]/u.test(value)}
-function validateTeluguString(value,label){if(typeof value!=="string")throw new Error(`${label} must be a string`);const text=value.trim();if(!text)throw new Error(`${label} is empty`);if(!containsTelugu(text))throw new Error(`${label} contains no Telugu text`);if(/[\u0400-\u04FF\u0370-\u03FF\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0780-\u07BF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C80-\u0CFF\u0D00-\u0D7F\u0D80-\u0DFF\u0E00-\u0E7F\u0E80-\u0EFF\u1000-\u109F\u1100-\u11FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/u.test(text))throw new Error(`${label} contains forbidden foreign script characters`);if(/\uFFFD/.test(text))throw new Error(`${label} contains replacement characters`);if(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(text))throw new Error(`${label} contains control characters`);
-if(/\\/u.test(text))throw new Error(`${label} contains forbidden backslash characters`)}
+function validateTeluguString(value,label){if(typeof value!=="string")throw new Error(`${label} must be a string`);const text=value.trim();if(!text)throw new Error(`${label} is empty`);if(!containsTelugu(text))throw new Error(`${label} contains no Telugu text`);if(/[\u0400-\u04FF\u0370-\u03FF\u0590-\u05FF\u0600-\u06FF\u0700-\u074F\u0780-\u07BF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C80-\u0CFF\u0D00-\u0D7F\u0D80-\u0DFF\u0E00-\u0E7F\u0E80-\u0EFF\u1000-\u109F\u1100-\u11FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/u.test(text))throw new Error(`${label} contains forbidden foreign script characters`);if(/\uFFFD/.test(text))throw new Error(`${label} contains replacement characters`);if(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(text))throw new Error(`${label} contains control characters`);if(/[A-Za-z]/.test(text))throw new Error(`${label} contains English alphabet characters`);if(/\\/u.test(text))throw new Error(`${label} contains forbidden backslash characters`)}
 function validateGeneratedContent(x){if(!x||typeof x!=="object"||Array.isArray(x))throw new Error("Generated result is not an object");if(Number(x.day)!==DAY)throw new Error("Generated day mismatch");for(const field of["title","stage","focus","lesson","why_it_matters","common_misunderstanding","reflection"])if(typeof x[field]!=="string")throw new Error(`Missing or invalid field: ${field}`);if(x.lesson.trim().length<500)throw new Error("Lesson is too short");if(x.lesson.trim().length>30000)throw new Error("Lesson is excessively long");if(!Array.isArray(x.examples)||x.examples.length<3)throw new Error("At least 3 examples are required");if(x.examples.length>8)throw new Error("Too many examples");for(const[index,example]of x.examples.entries()){if(typeof example!=="string"||example.trim().length<20)throw new Error(`Example ${index+1} is too short`);if(example.trim().length>2500)throw new Error(`Example ${index+1} is too long`)}if(x.why_it_matters.trim().length<100)throw new Error("why_it_matters is too short");if(x.common_misunderstanding.trim().length<50)throw new Error("common_misunderstanding is too short");if(x.reflection.trim().length<20)throw new Error("Reflection is too short");if(!Array.isArray(x.mcqs)||x.mcqs.length!==5)throw new Error("Exactly 5 MCQs are required");x.mcqs.forEach((mcq,index)=>{const n=index+1;if(!mcq||typeof mcq!=="object"||Array.isArray(mcq))throw new Error(`MCQ ${n} must be an object`);if(typeof mcq.question!=="string"||!Array.isArray(mcq.options)||mcq.options.length!==4||typeof mcq.answer!=="string"||typeof mcq.explanation!=="string")throw new Error(`Invalid MCQ ${n}`);const options=mcq.options.map(option=>String(option).trim()),answer=String(mcq.answer).trim();if(options.some(option=>option.length===0))throw new Error(`MCQ ${n}: empty option`);if(new Set(options).size!==4)throw new Error(`MCQ ${n}: options must be unique`);if(!options.includes(answer))throw new Error(`MCQ ${n}: answer must exactly match one option`);if(mcq.question.trim().length<10)throw new Error(`MCQ ${n}: question is too short`);if(mcq.question.trim().length>1500)throw new Error(`MCQ ${n}: question is too long`);if(mcq.explanation.trim().length<20)throw new Error(`MCQ ${n}: explanation is too short`)});for(const field of["title","stage","focus","lesson","why_it_matters","common_misunderstanding","reflection"])validateTeluguString(x[field],field);x.examples.forEach((example,index)=>validateTeluguString(example,`examples[${index}]`));x.mcqs.forEach((mcq,index)=>{validateTeluguString(mcq.question,`mcqs[${index}].question`);mcq.options.forEach((option,j)=>validateTeluguString(option,`mcqs[${index}].options[${j}]`));validateTeluguString(mcq.answer,`mcqs[${index}].answer`);validateTeluguString(mcq.explanation,`mcqs[${index}].explanation`)});if(!x.constitutional_reference||typeof x.constitutional_reference!=="object"||Array.isArray(x.constitutional_reference))throw new Error("constitutional_reference is missing");for(const field of["articles","parts","references"])if(!Array.isArray(x.constitutional_reference[field]))throw new Error(`constitutional_reference.${field} must be an array`)}
 function restoreAuthoritativeFields(generated){generated.day=DAY;generated.title=syllabusEntry.title;generated.stage=syllabusEntry.stage;generated.focus=syllabusEntry.focus;generated.constitutional_reference={articles:Array.isArray(constitutionalEntry.articles)?constitutionalEntry.articles:[],parts:Array.isArray(constitutionalEntry.parts)?constitutionalEntry.parts:[],references:Array.isArray(constitutionalEntry.references)?constitutionalEntry.references:[]};generated.source_metadata={source_layers:requiredLayers,source_files:requiredLayers.map(layer=>FILES[layer]),source_status:"validated-before-generation",source_day:DAY,constitutional_source_type:constitutionalEntry.source_type||null,additional_sources:Array.isArray(constitutionalEntry.additional_sources)?constitutionalEntry.additional_sources:[],legal_source_ids:daySources.legal&&Array.isArray(daySources.legal.legal_sources)?unique(daySources.legal.legal_sources):[],historical_source_ids:daySources.historical&&Array.isArray(daySources.historical.sources)?unique(daySources.historical.sources):[],judicial_doctrines:daySources.judicial&&Array.isArray(daySources.judicial.doctrines)?unique(daySources.judicial.doctrines):[],judicial_cases:daySources.judicial&&Array.isArray(daySources.judicial.cases)?unique(daySources.judicial.cases):[],official_source_ids:daySources.official&&Array.isArray(daySources.official.sources)?unique(daySources.official.sources):[]};return generated}
 function validateFinalOutput(x){validateGeneratedContent(x);if(Number(x.day)!==DAY)throw new Error("Final day mismatch");if(x.title!==syllabusEntry.title)throw new Error("Final title does not match authoritative syllabus");if(x.stage!==syllabusEntry.stage)throw new Error("Final stage does not match authoritative syllabus");if(x.focus!==syllabusEntry.focus)throw new Error("Final focus does not match authoritative syllabus");const expectedReference={articles:Array.isArray(constitutionalEntry.articles)?constitutionalEntry.articles:[],parts:Array.isArray(constitutionalEntry.parts)?constitutionalEntry.parts:[],references:Array.isArray(constitutionalEntry.references)?constitutionalEntry.references:[]};if(JSON.stringify(x.constitutional_reference)!==JSON.stringify(expectedReference))throw new Error("Final constitutional_reference does not match authoritative source");if(!x.source_metadata||typeof x.source_metadata!=="object")throw new Error("Final source_metadata is missing");if(JSON.stringify(x.source_metadata.source_layers)!==JSON.stringify(requiredLayers))throw new Error("Final source layers do not match required layers");if(Number(x.source_metadata.source_day)!==DAY)throw new Error("Final source day mismatch");if(x.source_metadata.source_status!=="validated-before-generation")throw new Error("Final source status mismatch");const expectedFiles=requiredLayers.map(layer=>FILES[layer]);if(JSON.stringify(x.source_metadata.source_files)!==JSON.stringify(expectedFiles))throw new Error("Final source files do not match required files");const expectedLegal=daySources.legal&&Array.isArray(daySources.legal.legal_sources)?unique(daySources.legal.legal_sources):[];const expectedHistorical=daySources.historical&&Array.isArray(daySources.historical.sources)?unique(daySources.historical.sources):[];const expectedDoctrines=daySources.judicial&&Array.isArray(daySources.judicial.doctrines)?unique(daySources.judicial.doctrines):[];const expectedCases=daySources.judicial&&Array.isArray(daySources.judicial.cases)?unique(daySources.judicial.cases):[];const expectedOfficial=daySources.official&&Array.isArray(daySources.official.sources)?unique(daySources.official.sources):[];if(JSON.stringify(x.source_metadata.legal_source_ids)!==JSON.stringify(expectedLegal))throw new Error("Final legal provenance mismatch");if(JSON.stringify(x.source_metadata.historical_source_ids)!==JSON.stringify(expectedHistorical))throw new Error("Final historical provenance mismatch");if(JSON.stringify(x.source_metadata.judicial_doctrines)!==JSON.stringify(expectedDoctrines))throw new Error("Final judicial doctrine provenance mismatch");if(JSON.stringify(x.source_metadata.judicial_cases)!==JSON.stringify(expectedCases))throw new Error("Final judicial case provenance mismatch");if(JSON.stringify(x.source_metadata.official_source_ids)!==JSON.stringify(expectedOfficial))throw new Error("Final official provenance mismatch")}
