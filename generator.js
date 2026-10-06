@@ -1428,64 +1428,13 @@ Each answer explanation must clearly explain WHY the selected answer is correct.
 LANGUAGE
 --------------------------------------------------
 
-EVERY LEARNER-FACING FIELD MUST BE TELUGU ONLY.
+Everything should be in natural Telugu.
 
-The following fields are learner-facing:
+English may be retained only where an official constitutional name or unavoidable technical term genuinely requires it.
 
-- title
-- stage
-- focus
-- lesson
-- examples
-- why_it_matters
-- common_misunderstanding
-- reflection
-- every MCQ question
-- every MCQ option
-- every MCQ answer
-- every MCQ explanation
+Do not produce Telugu transliteration that makes the lesson unnatural.
 
-Do NOT use English alphabet letters A-Z or a-z in ANY learner-facing field.
-
-Do NOT use English words in learner-facing fields.
-
-Do NOT use English abbreviations in learner-facing fields.
-
-Do NOT use Romanized Telugu in learner-facing fields.
-
-If the supplied syllabus or source context contains English, understand its meaning and write the learner-facing content naturally in Telugu.
-
-DO NOT copy English syllabus wording into the learner-facing fields.
-
-English in the supplied source context does NOT mean English is permitted in the learner-facing output.
-
-Internal technical metadata may contain English.
-
-The following are NOT learner-facing:
-
-- JSON property names
-- constitutional_reference
-- source_metadata
-- Article references
-- source IDs
-- source file names
-
-Do not translate or alter those internal metadata values.
-
-
---------------------------------------------------
-FINAL LANGUAGE CHECK BEFORE RETURNING JSON
---------------------------------------------------
-
-Before returning the JSON, internally inspect EVERY learner-facing string.
-
-If ANY learner-facing string contains even ONE English alphabet character A-Z or a-z, rewrite that field completely in Telugu.
-
-Check again before returning.
-
-Do not return the JSON until all learner-facing fields contain Telugu text and ZERO English alphabet characters.
-
-The JavaScript generator will perform a final safety check after generation as well.
+Use clear Telugu suitable for a broad Indian audience.
 
 
 --------------------------------------------------
@@ -1611,7 +1560,7 @@ async function callGroq() {
                     role: "system",
 
                     content:
-                      "You are an exceptionally careful constitutional educator and Telugu editor. Return only valid JSON. Never invent unsupported constitutional, legal, historical or judicial facts. All learner-facing content must be Telugu only and must contain zero English alphabet letters."
+                      "You are an exceptionally careful constitutional educator and Telugu editor. Return only valid JSON. Never invent unsupported constitutional, legal, historical or judicial facts."
                   },
 
                   {
@@ -1690,73 +1639,6 @@ function containsTelugu(value) {
 }
 
 
-function containsEnglishLetters(value) {
-  return (
-    typeof value === "string" &&
-    /[A-Za-z]/.test(value)
-  );
-}
-
-
-/*
- * Learner-facing content must be Telugu only.
- *
- * English letters are rejected.
- *
- * Internal metadata such as:
- * - constitutional_reference
- * - source_metadata
- * - source IDs
- * - filenames
- * is NOT checked here.
- */
-
-function validateLearnerFacingString(
-  value,
-  fieldName
-) {
-  const errors = [];
-
-  if (
-    typeof value !== "string"
-  ) {
-    errors.push(
-      `${fieldName} must be a string`
-    );
-
-    return errors;
-  }
-
-  if (
-    value.trim() === ""
-  ) {
-    errors.push(
-      `${fieldName} must not be empty`
-    );
-
-    return errors;
-  }
-
-  if (
-    !containsTelugu(value)
-  ) {
-    errors.push(
-      `${fieldName} must contain Telugu text`
-    );
-  }
-
-  if (
-    containsEnglishLetters(value)
-  ) {
-    errors.push(
-      `${fieldName} contains English letters`
-    );
-  }
-
-  return errors;
-}
-
-
 function validateTeluguContent(x) {
   const errors = [];
 
@@ -1774,12 +1656,14 @@ function validateTeluguContent(x) {
     const field
     of textFields
   ) {
-    errors.push(
-      ...validateLearnerFacingString(
-        x[field],
-        field
-      )
-    );
+    if (
+      typeof x[field] !== "string" ||
+      !containsTelugu(x[field])
+    ) {
+      errors.push(
+        `${field} must contain Telugu text`
+      );
+    }
   }
 
   if (
@@ -1787,17 +1671,15 @@ function validateTeluguContent(x) {
   ) {
     x.examples.forEach(
       (example, index) => {
-        errors.push(
-          ...validateLearnerFacingString(
-            example,
-            `Example ${index + 1}`
-          )
-        );
+        if (
+          typeof example !== "string" ||
+          !containsTelugu(example)
+        ) {
+          errors.push(
+            `Example ${index + 1} must contain Telugu text`
+          );
+        }
       }
-    );
-  } else {
-    errors.push(
-      "examples must be an array"
     );
   }
 
@@ -1808,65 +1690,52 @@ function validateTeluguContent(x) {
       (mcq, index) => {
 
         if (
-          !mcq ||
-          typeof mcq !== "object"
+          !containsTelugu(
+            mcq.question
+          )
         ) {
           errors.push(
-            `MCQ ${index + 1} must be an object`
+            `MCQ ${index + 1} question must contain Telugu text`
           );
-
-          return;
         }
 
-        errors.push(
-          ...validateLearnerFacingString(
-            mcq.question,
-            `MCQ ${index + 1} question`
-          )
-        );
+        for (
+          const [optionIndex, option]
+          of (
+            Array.isArray(mcq.options)
+              ? mcq.options
+              : []
+          ).entries()
+        ) {
+          if (
+            !containsTelugu(option)
+          ) {
+            errors.push(
+              `MCQ ${index + 1} option ${optionIndex + 1} must contain Telugu text`
+            );
+          }
+        }
 
         if (
-          Array.isArray(
-            mcq.options
+          !containsTelugu(
+            mcq.answer
           )
         ) {
-          mcq.options.forEach(
-            (
-              option,
-              optionIndex
-            ) => {
-              errors.push(
-                ...validateLearnerFacingString(
-                  option,
-                  `MCQ ${index + 1} option ${optionIndex + 1}`
-                )
-              );
-            }
-          );
-        } else {
           errors.push(
-            `MCQ ${index + 1} options must be an array`
+            `MCQ ${index + 1} answer must contain Telugu text`
           );
         }
 
-        errors.push(
-          ...validateLearnerFacingString(
-            mcq.answer,
-            `MCQ ${index + 1} answer`
+        if (
+          !containsTelugu(
+            mcq.explanation
           )
-        );
-
-        errors.push(
-          ...validateLearnerFacingString(
-            mcq.explanation,
-            `MCQ ${index + 1} explanation`
-          )
-        );
+        ) {
+          errors.push(
+            `MCQ ${index + 1} explanation must contain Telugu text`
+          );
+        }
       }
-    );
-  } else {
-    errors.push(
-      "mcqs must be an array"
     );
   }
 
@@ -1967,7 +1836,6 @@ function validateGeneratedContent(x) {
 
   x.mcqs.forEach(
     (mcq, index) => {
-
       if (
         !mcq ||
         typeof mcq.question !== "string" ||
@@ -2094,21 +1962,17 @@ function validateGeneratedContent(x) {
 function restoreAuthoritativeFields(
   generated
 ) {
-  /*
-   * IMPORTANT:
-   *
-   * Do NOT restore title/stage/focus
-   * from syllabus.json.
-   *
-   * syllabus.json may contain English
-   * internal planning text.
-   *
-   * The AI-generated Telugu learner-facing
-   * values must remain untouched.
-   */
-
   generated.day =
     DAY;
+
+  generated.title =
+    syllabusEntry.title;
+
+  generated.stage =
+    syllabusEntry.stage;
+
+  generated.focus =
+    syllabusEntry.focus;
 
   generated.constitutional_reference = {
     articles:
@@ -2211,13 +2075,18 @@ function validateFinalOutput(
     );
   }
 
-  /*
-   * DO NOT compare title/stage/focus
-   * with syllabus.json.
-   *
-   * These fields are learner-facing
-   * AI-generated Telugu content.
-   */
+  if (
+    output.title !==
+      syllabusEntry.title ||
+    output.stage !==
+      syllabusEntry.stage ||
+    output.focus !==
+      syllabusEntry.focus
+  ) {
+    throw new Error(
+      "Final output syllabus fields do not match authoritative syllabus"
+    );
+  }
 
   const expectedArticles =
     JSON.stringify(
@@ -2326,14 +2195,6 @@ function validateFinalOutput(
     );
   }
 
-  /*
-   * FINAL SAFETY CHECK:
-   *
-   * Learner-facing content must still
-   * be Telugu-only after authoritative
-   * metadata restoration.
-   */
-
   const finalTeluguErrors =
     validateTeluguContent(
       output
@@ -2395,14 +2256,6 @@ function validateFinalOutput(
   );
 
   console.log(
-    "Telugu-only learner content enabled."
-  );
-
-  console.log(
-    "English-letter rejection enabled."
-  );
-
-  console.log(
     "Calling Groq..."
   );
 
@@ -2451,11 +2304,6 @@ function validateFinalOutput(
     "utf8"
   );
 
-  /*
-   * Re-read the actual file from disk
-   * and validate it one final time.
-   */
-
   const written =
     JSON.parse(
       fs.readFileSync(
@@ -2492,14 +2340,6 @@ function validateFinalOutput(
 
   console.log(
     `Sources: ${requiredLayers.join(", ")}`
-  );
-
-  console.log(
-    "Telugu-only learner content: PASSED"
-  );
-
-  console.log(
-    "English-letter validation: PASSED"
   );
 
   console.log(
