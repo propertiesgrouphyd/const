@@ -2,10 +2,8 @@ const fs=require("fs"),path=require("path"),DAY=Number(process.env.DAY||0),VALID
 
 function loadJson(fileName){
   const filePath=path.join(DATA,fileName);
-
   if(!fs.existsSync(filePath))
     throw new Error(`Required source file not found: data/${fileName}`);
-
   try{
     return JSON.parse(fs.readFileSync(filePath,"utf8"))
   }catch(error){
@@ -729,9 +727,11 @@ Create Day ${DAY} of Vidhwaan Constitution 365, Telugu edition.
 TWO NON-NEGOTIABLE GOALS:
 
 1. LEGAL/FACTUAL ACCURACY:
+
 Every constitutional, statutory, judicial, historical and institutional claim must be supported by the AUTHORITATIVE SOURCE CONTEXT below.
 
 2. HUMAN CLARITY:
+
 A person with no legal background must understand the lesson easily.
 
 ACCURACY ALWAYS BEATS COMPLETENESS, DRAMA, EXAMPLES OR LENGTH.
@@ -836,6 +836,30 @@ Explain technical terms immediately in plain Telugu.
 Do not write like a statute, textbook, examination guide or coaching centre.
 
 Do not sacrifice legal precision for simplicity.
+
+PARAGRAPH FORMAT — CRITICAL:
+
+The lesson must be divided into small, easy-to-read paragraphs.
+
+Write 5-8 separate paragraphs normally.
+
+Minimum 5 paragraphs. Maximum 10 paragraphs.
+
+Separate every paragraph with exactly one blank line.
+
+Normally write 2-4 sentences per paragraph.
+
+Do NOT create one long continuous paragraph.
+
+Keep each paragraph focused on one idea.
+
+Use a natural reading flow: introduce the idea, explain the constitutional meaning, explain it in ordinary language, give a safe source-supported illustration or clarification, explain its supported importance, and clarify an important distinction or misunderstanding.
+
+Do not artificially split a single sentence across paragraphs.
+
+No paragraph should normally exceed 1800 characters.
+
+The lesson should feel like a clear article for an ordinary reader, not one large textbook block.
 
 EXAMPLES — CRITICAL:
 
@@ -964,6 +988,26 @@ LENGTH:
 
 Lesson 500-30000 characters.
 
+PARAGRAPH FORMAT — CRITICAL:
+
+The lesson must be divided into small, easy-to-read paragraphs.
+
+Write 5-8 separate paragraphs normally.
+
+Minimum 5 paragraphs. Maximum 10 paragraphs.
+
+Separate every paragraph with exactly one blank line.
+
+Normally write 2-4 sentences per paragraph.
+
+Do NOT create one long continuous paragraph.
+
+Keep each paragraph focused on one idea.
+
+Do not artificially split a single sentence across paragraphs.
+
+No paragraph should normally exceed 1800 characters.
+
 Examples 3-8, each 20-2500 characters.
 
 why_it_matters >=100 characters.
@@ -1077,7 +1121,6 @@ async function callGroq(attempt,feedback=""){
                     feedback
                     ?
 `
-
 
 CORRECTION REQUIRED FROM THE PREVIOUS ATTEMPT:
 
@@ -1400,6 +1443,36 @@ function validateGeneratedContent(x){
     throw new Error(
       "Lesson is excessively long"
     );
+
+  const lessonParagraphs=x.lesson
+    .trim()
+    .split(/\n\s*\n/)
+    .map(p=>p.trim())
+    .filter(Boolean);
+
+  if(lessonParagraphs.length<5)
+    throw new Error(
+      "Lesson must contain at least 5 paragraphs"
+    );
+
+  if(lessonParagraphs.length>10)
+    throw new Error(
+      "Lesson contains too many paragraphs"
+    );
+
+  lessonParagraphs.forEach((paragraph,index)=>{
+    const sentenceCount=(paragraph.match(/[.!?।]+/g)||[]).length;
+
+    if(paragraph.length>1800)
+      throw new Error(
+        `Lesson paragraph ${index+1} is too long`
+      );
+
+    if(sentenceCount>5)
+      throw new Error(
+        `Lesson paragraph ${index+1} contains too many sentences`
+      );
+  });
 
   if(
     !Array.isArray(x.examples)||
