@@ -1909,7 +1909,6 @@ async function callGroq(
   - ASCII letters only when unavoidable
   - ASCII digits
   - common punctuation
-  - whitespace
   - common Unicode punctuation/numbers
 
   Explicitly reject other major writing systems.
@@ -2015,6 +2014,12 @@ function validateTeluguString(
   ) {
     errors.push(
       `${fieldName} must contain Telugu text`
+    );
+  }
+
+  if (/[A-Za-z]/.test(value)) {
+    errors.push(
+      `${fieldName} contains English letters`
     );
   }
 
@@ -2476,15 +2481,6 @@ function restoreAuthoritativeFields(
   generated.day =
     DAY;
 
-  generated.title =
-    syllabusEntry.title;
-
-  generated.stage =
-    syllabusEntry.stage;
-
-  generated.focus =
-    syllabusEntry.focus;
-
   generated.constitutional_reference = {
     articles:
       Array.isArray(
@@ -2606,19 +2602,6 @@ function validateFinalOutput(
   ) {
     throw new Error(
       "Final output day mismatch"
-    );
-  }
-
-  if (
-    output.title !==
-      syllabusEntry.title ||
-    output.stage !==
-      syllabusEntry.stage ||
-    output.focus !==
-      syllabusEntry.focus
-  ) {
-    throw new Error(
-      "Final output syllabus fields do not match authoritative syllabus"
     );
   }
 
