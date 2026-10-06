@@ -1,0 +1,670 @@
+{
+  "course": "Constitution 365",
+  "language": "te",
+  "country": "India",
+  "primary_legal_sources": [
+    {
+      "id": "citizenship-act-1955",
+      "title": "Citizenship Act, 1955",
+      "authority": "Parliament of India",
+      "subject": "Citizenship of India"
+    },
+    {
+      "id": "protection-civil-rights-act-1955",
+      "title": "Protection of Civil Rights Act, 1955",
+      "authority": "Parliament of India",
+      "subject": "Civil-rights protection relating to untouchability"
+    },
+    {
+      "id": "right-to-education-act-2009",
+      "title": "Right of Children to Free and Compulsory Education Act, 2009",
+      "authority": "Parliament of India",
+      "subject": "Elementary education"
+    },
+    {
+      "id": "rights-persons-disabilities-act-2016",
+      "title": "Rights of Persons with Disabilities Act, 2016",
+      "authority": "Parliament of India",
+      "subject": "Rights and protections of persons with disabilities"
+    },
+    {
+      "id": "prohibition-of-child-marriage-act-2006",
+      "title": "Prohibition of Child Marriage Act, 2006",
+      "authority": "Parliament of India",
+      "subject": "Prevention of child marriage"
+    },
+    {
+      "id": "protection-women-domestic-violence-act-2005",
+      "title": "Protection of Women from Domestic Violence Act, 2005",
+      "authority": "Parliament of India",
+      "subject": "Protection from domestic violence"
+    },
+    {
+      "id": "legal-services-authorities-act-1987",
+      "title": "Legal Services Authorities Act, 1987",
+      "authority": "Parliament of India",
+      "subject": "Legal services and Lok Adalats"
+    },
+    {
+      "id": "contempt-of-courts-act-1971",
+      "title": "Contempt of Courts Act, 1971",
+      "authority": "Parliament of India",
+      "subject": "Statutory framework relating to contempt of courts"
+    },
+    {
+      "id": "representation-of-people-act-1950",
+      "title": "Representation of the People Act, 1950",
+      "authority": "Parliament of India",
+      "subject": "Electoral rolls and allocation of seats"
+    },
+    {
+      "id": "representation-of-people-act-1951",
+      "title": "Representation of the People Act, 1951",
+      "authority": "Parliament of India",
+      "subject": "Conduct of elections and related electoral matters"
+    },
+    {
+      "id": "election-laws-general",
+      "title": "Constitutional and statutory election framework",
+      "authority": "Parliament of India and Election Commission of India",
+      "subject": "Election administration, conduct and electoral participation"
+    },
+    {
+      "id": "panchayati-raj-state-laws",
+      "title": "State Panchayati Raj legislation",
+      "authority": "State Legislatures",
+      "subject": "Detailed organisation, powers, functions and finances of Panchayats"
+    },
+    {
+      "id": "municipal-laws",
+      "title": "State Municipal legislation",
+      "authority": "State Legislatures",
+      "subject": "Detailed organisation, powers, functions, taxation and finances of Municipalities"
+    },
+    {
+      "id": "right-information-act-2005",
+      "title": "Right to Information Act, 2005",
+      "authority": "Parliament of India",
+      "subject": "Statutory right to information"
+    },
+    {
+      "id": "child-adolescent-labour-act-1986",
+      "title": "Child and Adolescent Labour (Prohibition and Regulation) Act, 1986",
+      "authority": "Parliament of India",
+      "subject": "Prohibition of child labour and regulation of adolescent labour"
+    },
+    {
+      "id": "bharatiya-nyaya-sanhita-2023",
+      "title": "Bharatiya Nyaya Sanhita, 2023",
+      "authority": "Parliament of India",
+      "subject": "Substantive criminal law"
+    },
+    {
+      "id": "bharatiya-nagarik-suraksha-sanhita-2023",
+      "title": "Bharatiya Nagarik Suraksha Sanhita, 2023",
+      "authority": "Parliament of India",
+      "subject": "Criminal procedure"
+    },
+    {
+      "id": "bharatiya-sakshya-adhiniyam-2023",
+      "title": "Bharatiya Sakshya Adhiniyam, 2023",
+      "authority": "Parliament of India",
+      "subject": "Law of evidence"
+    },
+    {
+      "id": "prevention-insults-national-honour-act-1971",
+      "title": "Prevention of Insults to National Honour Act, 1971",
+      "authority": "Parliament of India",
+      "subject": "Specific statutory protection concerning disrespect to the Constitution and national symbols"
+    },
+    {
+      "id": "transfer-of-property-act-1882",
+      "title": "Transfer of Property Act, 1882",
+      "authority": "Parliament of India",
+      "subject": "Transfers of property by act of parties"
+    },
+    {
+      "id": "land-acquisition-act-2013",
+      "title": "Right to Fair Compensation and Transparency in Land Acquisition, Rehabilitation and Resettlement Act, 2013",
+      "authority": "Parliament of India",
+      "subject": "Statutory framework for compulsory land acquisition and compensation"
+    },
+    {
+      "id": "parliamentary-proceedings-protection-publication-act-1977",
+      "title": "Parliamentary Proceedings (Protection of Publication) Act, 1977",
+      "authority": "Parliament of India",
+      "subject": "Protection for publication of substantially true reports of parliamentary proceedings"
+    },
+    {
+      "id": "salary-allowances-leaders-opposition-act-1977",
+      "title": "Salary and Allowances of Leaders of Opposition in Parliament Act, 1977",
+      "authority": "Parliament of India",
+      "subject": "Statutory recognition and conditions concerning Leaders of Opposition in Parliament"
+    },
+    {
+      "id": "all-india-services-act-1951",
+      "title": "All-India Services Act, 1951",
+      "authority": "Parliament of India",
+      "subject": "Recruitment and conditions of service for All-India Services"
+    },
+    {
+      "id": "administrative-tribunals-act-1985",
+      "title": "Administrative Tribunals Act, 1985",
+      "authority": "Parliament of India",
+      "subject": "Adjudication of service disputes through Administrative Tribunals"
+    },
+    {
+      "id": "police-act-1861",
+      "title": "Police Act, 1861",
+      "authority": "Parliament of India",
+      "subject": "Historical and statutory framework for regulation of police; state-specific police laws must also be considered"
+    },
+    {
+      "id": "inter-state-river-water-disputes-act-1956",
+      "title": "Inter-State River Water Disputes Act, 1956",
+      "authority": "Parliament of India",
+      "subject": "Adjudication of disputes relating to waters of inter-State rivers and river valleys"
+    },
+    {
+      "id": "finance-commission-miscellaneous-provisions-act-1951",
+      "title": "Finance Commission (Miscellaneous Provisions) Act, 1951",
+      "authority": "Parliament of India",
+      "subject": "Qualifications, selection and powers of Finance Commission members"
+    },
+    {
+      "id": "cag-duties-powers-service-act-1971",
+      "title": "Comptroller and Auditor-General’s (Duties, Powers and Conditions of Service) Act, 1971",
+      "authority": "Parliament of India",
+      "subject": "Statutory framework for CAG duties, powers and conditions of service"
+    },
+    {
+      "id": "information-technology-act-2000",
+      "title": "Information Technology Act, 2000",
+      "authority": "Parliament of India",
+      "subject": "Legal framework for electronic records, electronic communication and specified cyber matters"
+    },
+    {
+      "id": "press-council-act-1978",
+      "title": "Press Council Act, 1978",
+      "authority": "Parliament of India",
+      "subject": "Statutory framework establishing the Press Council and functions relating to press freedom and standards"
+    },
+    {
+      "id": "lokpal-and-lokayuktas-act-2013",
+      "title": "Lokpal and Lokayuktas Act, 2013",
+      "authority": "Parliament of India",
+      "subject": "Statutory institutions for inquiry into corruption allegations against specified public functionaries"
+    },
+    {
+      "id": "lok-sabha-rules-procedure",
+      "title": "Rules of Procedure and Conduct of Business in Lok Sabha",
+      "authority": "Lok Sabha",
+      "subject": "Rules governing procedure and conduct of business in the House of the People"
+    },
+    {
+      "id": "rajya-sabha-rules-procedure",
+      "title": "Rules of Procedure and Conduct of Business in the Council of States (Rajya Sabha)",
+      "authority": "Rajya Sabha",
+      "subject": "Rules governing procedure and conduct of business in the Council of States"
+    },
+    {
+      "id": "prevention-of-corruption-act-1988",
+      "title": "Prevention of Corruption Act, 1988",
+      "authority": "Parliament of India",
+      "subject": "Offences relating to bribery and corruption by public servants"
+    },
+    {
+      "id": "conduct-of-elections-rules-1961",
+      "title": "Conduct of Elections Rules, 1961",
+      "authority": "Central Government under the Representation of the People Act, 1951",
+      "subject": "Statutory rules governing conduct of elections, polling, counting, election expenses and related matters"
+    },
+    {
+      "id": "election-symbols-order-1968",
+      "title": "Election Symbols (Reservation and Allotment) Order, 1968",
+      "authority": "Election Commission of India",
+      "subject": "Recognition of political parties and reservation, allotment and specification of election symbols"
+    },
+    {
+      "id": "mahatma-gandhi-national-rural-employment-guarantee-act-2005",
+      "title": "Mahatma Gandhi National Rural Employment Guarantee Act, 2005",
+      "authority": "Parliament of India",
+      "subject": "Rural employment, social audit and transparency for works implemented under the Act"
+    }
+  ],
+  "days": {
+    "34": {
+      "legal_sources": [
+        "citizenship-act-1955"
+      ]
+    },
+    "37": {
+      "legal_sources": [
+        "citizenship-act-1955"
+      ]
+    },
+    "53": {
+      "legal_sources": [
+        "prevention-insults-national-honour-act-1971"
+      ],
+      "note": "This statute supports a specific statutory aspect concerning disrespect to the Constitution; it does not codify all Fundamental Duties."
+    },
+    "70": {
+      "legal_sources": [
+        "protection-civil-rights-act-1955"
+      ]
+    },
+    "103": {
+      "legal_sources": [
+        "transfer-of-property-act-1882",
+        "land-acquisition-act-2013"
+      ],
+      "note": "These Acts provide statutory property/acquisition context; Article 300A remains the constitutional foundation."
+    },
+    "166": {
+      "legal_sources": [
+        "representation-of-people-act-1951"
+      ]
+    },
+    "167": {
+      "legal_sources": [
+        "representation-of-people-act-1950",
+        "representation-of-people-act-1951"
+      ]
+    },
+    "178": {
+      "legal_sources": [
+        "lok-sabha-rules-procedure",
+        "rajya-sabha-rules-procedure",
+        "parliamentary-proceedings-protection-publication-act-1977"
+      ]
+    },
+    "179": {
+      "legal_sources": [
+        "lok-sabha-rules-procedure",
+        "rajya-sabha-rules-procedure"
+      ]
+    },
+    "180": {
+      "legal_sources": [
+        "lok-sabha-rules-procedure",
+        "rajya-sabha-rules-procedure"
+      ]
+    },
+    "181": {
+      "legal_sources": [
+        "salary-allowances-leaders-opposition-act-1977",
+        "lok-sabha-rules-procedure",
+        "rajya-sabha-rules-procedure",
+        "representation-of-people-act-1951"
+      ]
+    },
+    "182": {
+      "legal_sources": [
+        "lok-sabha-rules-procedure",
+        "rajya-sabha-rules-procedure",
+        "representation-of-people-act-1951"
+      ]
+    },
+    "184": {
+      "legal_sources": [
+        "lok-sabha-rules-procedure",
+        "rajya-sabha-rules-procedure"
+      ]
+    },
+    "189": {
+      "legal_sources": [
+        "all-india-services-act-1951",
+        "prevention-of-corruption-act-1988"
+      ],
+      "note": "The Constitution supplies the service framework; these statutes provide statutory service and anti-corruption context."
+    },
+    "190": {
+      "legal_sources": [
+        "all-india-services-act-1951"
+      ]
+    },
+    "191": {
+      "legal_sources": [
+        "right-information-act-2005",
+        "lokpal-and-lokayuktas-act-2013",
+        "prevention-of-corruption-act-1988"
+      ],
+      "note": "Use statutory accountability laws only for their actual scope; constitutional and judicial accountability remain separately sourced."
+    },
+    "192": {
+      "legal_sources": [
+        "right-information-act-2005"
+      ]
+    },
+    "193": {
+      "legal_sources": [
+        "administrative-tribunals-act-1985"
+      ]
+    },
+    "204": {
+      "legal_sources": [
+        "representation-of-people-act-1951"
+      ]
+    },
+    "208": {
+      "legal_sources": [
+        "police-act-1861"
+      ]
+    },
+    "222": {
+      "legal_sources": [
+        "inter-state-river-water-disputes-act-1956"
+      ]
+    },
+    "245": {
+      "legal_sources": [
+        "legal-services-authorities-act-1987"
+      ]
+    },
+    "263": {
+      "legal_sources": [
+        "bharatiya-nagarik-suraksha-sanhita-2023",
+        "legal-services-authorities-act-1987"
+      ]
+    },
+    "264": {
+      "legal_sources": [
+        "bharatiya-nagarik-suraksha-sanhita-2023",
+        "bharatiya-sakshya-adhiniyam-2023"
+      ]
+    },
+    "265": {
+      "legal_sources": [
+        "bharatiya-sakshya-adhiniyam-2023",
+        "bharatiya-nagarik-suraksha-sanhita-2023"
+      ]
+    },
+    "266": {
+      "legal_sources": [
+        "bharatiya-sakshya-adhiniyam-2023",
+        "bharatiya-nagarik-suraksha-sanhita-2023"
+      ]
+    },
+    "272": {
+      "legal_sources": [
+        "representation-of-people-act-1951"
+      ]
+    },
+    "273": {
+      "legal_sources": [
+        "representation-of-people-act-1950"
+      ]
+    },
+    "274": {
+      "legal_sources": [
+        "representation-of-people-act-1950",
+        "representation-of-people-act-1951"
+      ]
+    },
+    "275": {
+      "legal_sources": [
+        "representation-of-people-act-1951"
+      ]
+    },
+    "276": {
+      "legal_sources": [
+        "representation-of-people-act-1950"
+      ]
+    },
+    "277": {
+      "legal_sources": [
+        "representation-of-people-act-1950",
+        "election-laws-general"
+      ]
+    },
+    "288": {
+      "legal_sources": [
+        "panchayati-raj-state-laws",
+        "municipal-laws"
+      ],
+      "note": "Local-body election law is primarily state-specific; the lesson must not invent a single uniform all-India municipal or Panchayat election statute."
+    },
+    "291": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "bharatiya-nyaya-sanhita-2023"
+      ],
+      "note": "Electoral corrupt practices and any applicable criminal offences must be distinguished and sourced separately."
+    },
+    "293": {
+      "legal_sources": [
+        "representation-of-people-act-1951"
+      ],
+      "note": "The statutory election framework contains specific provisions concerning appeals to caste and related electoral corrupt practices."
+    },
+    "294": {
+      "legal_sources": [
+        "representation-of-people-act-1951"
+      ],
+      "note": "The statutory election framework contains specific provisions concerning appeals to religion and related electoral corrupt practices."
+    },
+    "295": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "information-technology-act-2000"
+      ],
+      "note": "False statements in election contexts and digital communication must be treated under their respective legal frameworks; do not equate all false information with an offence."
+    },
+    "299": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "right-information-act-2005"
+      ],
+      "note": "Elections are one part of democracy; statutory election and transparency frameworks provide concrete examples without replacing constitutional principles."
+    },
+    "332": {
+      "legal_sources": [
+        "right-information-act-2005"
+      ]
+    },
+    "333": {
+      "legal_sources": [
+        "right-information-act-2005"
+      ]
+    },
+    "334": {
+      "legal_sources": [
+        "right-information-act-2005"
+      ],
+      "note": "The statutory right to information is governed by the Right to Information Act, 2005; Article 19(1)(a) is a constitutional foundation, not the complete statutory framework."
+    },
+    "335": {
+      "legal_sources": [
+        "finance-commission-miscellaneous-provisions-act-1951",
+        "cag-duties-powers-service-act-1971"
+      ]
+    },
+    "336": {
+      "legal_sources": [
+        "cag-duties-powers-service-act-1971"
+      ]
+    },
+    "338": {
+      "legal_sources": [
+        "finance-commission-miscellaneous-provisions-act-1951"
+      ]
+    },
+    "339": {
+      "legal_sources": [
+        "right-information-act-2005",
+        "lokpal-and-lokayuktas-act-2013",
+        "administrative-tribunals-act-1985"
+      ],
+      "note": "The cited Acts cover important statutory accountability routes, not every general government grievance mechanism."
+    },
+    "340": {
+      "legal_sources": [
+        "press-council-act-1978"
+      ]
+    },
+    "341": {
+      "legal_sources": [
+        "information-technology-act-2000"
+      ]
+    },
+    "342": {
+      "legal_sources": [
+        "information-technology-act-2000",
+        "bharatiya-nyaya-sanhita-2023"
+      ],
+      "note": "The statutory sources must be used only for provisions that actually apply; constitutional and judicial limits on speech must be kept distinct."
+    },
+    "343": {
+      "legal_sources": [
+        "information-technology-act-2000"
+      ]
+    },
+    "93": {
+      "legal_sources": [
+        "child-adolescent-labour-act-1986"
+      ],
+      "note": "Article 24 is supplemented by the statutory child-labour framework."
+    },
+    "247": {
+      "legal_sources": [
+        "legal-services-authorities-act-1987"
+      ],
+      "note": "The Act expressly provides for legal services authorities and Lok Adalats."
+    },
+    "259": {
+      "legal_sources": [
+        "contempt-of-courts-act-1971"
+      ],
+      "note": "The Act provides the statutory framework for contempt; constitutional Articles 129 and 215 remain the constitutional foundation."
+    },
+    "278": {
+      "legal_sources": [
+        "representation-of-people-act-1951"
+      ],
+      "note": "Candidate qualifications and disqualifications must be distinguished between the Constitution and election statute."
+    },
+    "279": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "election-symbols-order-1968"
+      ],
+      "note": "Political-party registration and election-symbol regulation are governed by the applicable election law and ECI order."
+    },
+    "280": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Campaign conduct must be described from applicable election law and rules; the Model Code is not treated as an Act."
+    },
+    "281": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Election procedures are governed by the constitutional framework, election legislation and rules."
+    },
+    "282": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Secrecy of voting is specifically addressed by election law and rules."
+    },
+    "284": {
+      "legal_sources": [
+        "representation-of-people-act-1950",
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Representative elections and their conduct are governed by the constitutional and statutory election framework."
+    },
+    "285": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Counting and declaration of results must be described from the applicable election law and rules."
+    },
+    "286": {
+      "legal_sources": [
+        "representation-of-people-act-1950",
+        "representation-of-people-act-1951"
+      ],
+      "note": "Lok Sabha elections use the statutory electoral-roll and election-conduct framework."
+    },
+    "287": {
+      "legal_sources": [
+        "representation-of-people-act-1950",
+        "representation-of-people-act-1951"
+      ],
+      "note": "State Assembly elections use the statutory electoral-roll and election-conduct framework."
+    },
+    "289": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "By-elections are governed by the applicable constitutional and election-law framework."
+    },
+    "290": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Election expenditure is regulated by the Representation of the People Act and Conduct of Elections Rules."
+    },
+    "292": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Election expenditure and corrupt-practice rules provide the statutory election-law context."
+    },
+    "297": {
+      "legal_sources": [
+        "representation-of-people-act-1951",
+        "conduct-of-elections-rules-1961"
+      ],
+      "note": "Candidate evaluation should distinguish constitutional qualifications, statutory disqualifications and election disclosures from subjective political judgments."
+    },
+    "305": {
+      "legal_sources": [
+        "panchayati-raj-state-laws"
+      ],
+      "note": "Detailed Sarpanch powers and duties are governed by the applicable State Panchayati Raj law; the Constitution provides the framework but not one uniform all-India Sarpanch statute."
+    },
+    "316": {
+      "legal_sources": [
+        "panchayati-raj-state-laws",
+        "municipal-laws",
+        "right-information-act-2005"
+      ],
+      "note": "Local grievance mechanisms vary by State and local body; the lesson must not invent one nationwide complaint procedure. RTI is a separate statutory transparency route."
+    },
+    "318": {
+      "legal_sources": [
+        "panchayati-raj-state-laws",
+        "municipal-laws",
+        "mahatma-gandhi-national-rural-employment-guarantee-act-2005"
+      ],
+      "note": "Social-audit rules differ by programme and State. MGNREGA provides a specific statutory social-audit framework for works under that Act; it must not be generalized to every local project."
+    },
+    "319": {
+      "legal_sources": [
+        "panchayati-raj-state-laws",
+        "municipal-laws",
+        "right-information-act-2005",
+        "prevention-of-corruption-act-1988"
+      ],
+      "note": "Local-government accountability and corruption must be described using applicable State/local laws plus the separate statutory transparency and anti-corruption frameworks."
+    }
+  },
+  "validation": {
+    "primary_source_ids_must_be_unique": true,
+    "every_day_source_id_must_exist": true,
+    "unresolved_days_must_not_be_generated": true,
+    "parliamentary_procedure_sources_are_authoritative_house_rules_not_ordinary_Acts": true
+  }
+}

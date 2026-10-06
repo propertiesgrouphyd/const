@@ -1,0 +1,137 @@
+{
+  "file": "source-map.json",
+  "version": "1.0",
+  "title": "Constitution 365 Source Routing Map",
+  "purpose": "Routes each Constitution 365 lesson to the authoritative source layers required for generation and validation.",
+
+  "source_files": {
+    "constitutional": "constitutional-sources.json",
+    "historical": "historical-sources.json",
+    "legal": "legal-sources.json",
+    "judicial": "judicial-sources.json",
+    "official": "official-sources.json"
+  },
+
+  "source_priority": [
+    "constitutional",
+    "legal",
+    "judicial",
+    "historical",
+    "official"
+  ],
+
+  "source_rules": {
+    "constitutional": {
+      "role": "Primary source for the Constitution of India itself.",
+      "required_for": [
+        "Articles",
+        "Parts",
+        "Schedules",
+        "constitutional provisions",
+        "constitutional offices",
+        "constitutional powers",
+        "constitutional duties",
+        "constitutional procedures"
+      ]
+    },
+
+    "legal": {
+      "role": "Supplementary source for ordinary legislation and statutory frameworks.",
+      "required_for": [
+        "Acts of Parliament",
+        "statutory rights",
+        "statutory procedures",
+        "statutory authorities",
+        "ordinary legislation"
+      ],
+      "restriction": "A statute must never be presented as if it were a provision of the Constitution."
+    },
+
+    "judicial": {
+      "role": "Supplementary source for judicial interpretation and constitutional doctrine.",
+      "required_for": [
+        "judicial review",
+        "constitutional interpretation",
+        "constitutional doctrine",
+        "judicial principles",
+        "Supreme Court decisions",
+        "High Court decisions where specifically required"
+      ],
+      "restriction": "Judicial interpretation must never be presented as constitutional text."
+    },
+
+    "historical": {
+      "role": "Supplementary source for constitutional history and historical context.",
+      "required_for": [
+        "Constituent Assembly",
+        "constitutional development",
+        "historical background",
+        "constitutional debates",
+        "historical events"
+      ]
+    },
+
+    "official": {
+      "role": "Supplementary source for current institutional and administrative information.",
+      "required_for": [
+        "constitutional institutions",
+        "election administration",
+        "Parliamentary institutions",
+        "official institutional information",
+        "current official procedures"
+      ]
+    }
+  },
+
+  "routing_logic": {
+    "constitutional_only": "Use constitutional-sources.json when the lesson can be completely supported by constitutional text.",
+    "constitutional_plus_legal": "Use constitutional-sources.json as the constitutional foundation and legal-sources.json for statutory context.",
+    "constitutional_plus_judicial": "Use constitutional-sources.json as the constitutional foundation and judicial-sources.json for judicial interpretation.",
+    "constitutional_plus_historical": "Use constitutional-sources.json as the constitutional foundation and historical-sources.json for historical context.",
+    "constitutional_plus_official": "Use constitutional-sources.json as the constitutional foundation and official-sources.json for institutional information.",
+    "mixed": "Load every explicitly required source layer and preserve the distinction between constitutional, statutory, judicial, historical and institutional material."
+  },
+
+  "day_map": {},
+
+  "unresolved": {
+    "policy": "A day must not be generated as fully verified if its required source mapping is unresolved.",
+    "generic_source_policy": "Generic placeholders in legal or other source files must not be silently converted into guessed source IDs.",
+    "missing_source_policy": "If a required source file or source entry does not exist, generation must stop for that day.",
+    "judicial_source_policy": "A judicial lesson must not receive invented case names, citations, holdings, dates, or quotations.",
+    "current_law_policy": "Where current statutory or institutional information is required, the generator must verify that the source represents the applicable current position."
+  },
+
+  "validation": {
+    "required_source_files": [
+      "constitutional-sources.json",
+      "historical-sources.json",
+      "legal-sources.json",
+      "judicial-sources.json",
+      "official-sources.json"
+    ],
+
+    "required_day_fields": [
+      "day",
+      "sources"
+    ],
+
+    "allowed_source_types": [
+      "constitutional",
+      "historical",
+      "legal",
+      "judicial",
+      "official"
+    ],
+
+    "rules": [
+      "Every generated day must have at least one authoritative source.",
+      "The Constitution must remain the primary source whenever the lesson concerns constitutional text.",
+      "Additional sources may supplement the constitutional source but must not replace it.",
+      "Every source ID referenced by a day must exist in its corresponding source file.",
+      "Every unresolved source must be reported before generation.",
+      "A day with an unresolved mandatory source must be blocked from AI generation.",
+      "The generator must preserve the distinction between constitutional text, statutory law, judicial interpretation, historical context, and official institutional information."
+    ]
+  }
+}

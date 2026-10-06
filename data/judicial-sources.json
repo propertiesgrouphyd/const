@@ -1,0 +1,851 @@
+{
+  "file": "judicial-sources.json",
+  "version": "2.0",
+  "title": "Authoritative Judicial Sources for Constitution 365",
+  "purpose": "Authoritative source map for constitutional lessons requiring judicial interpretation, constitutional doctrine, judicial decisions or Supreme Court jurisprudence in addition to the constitutional text.",
+
+  "source_policy": {
+    "primary_authority": [
+      "Supreme Court of India judgments",
+      "Constitution Bench judgments of the Supreme Court of India",
+      "Official Supreme Court judicial materials"
+    ],
+    "rules": [
+      "Do not present judicial interpretation as constitutional text.",
+      "Every case-specific proposition must be supported by a verified judgment.",
+      "Prefer Constitution Bench decisions for major constitutional doctrines.",
+      "Use the actual holding of the judgment and distinguish it from observations.",
+      "Do not invent case names, citations, dates, bench strength or holdings.",
+      "Do not use blogs, coaching material or secondary summaries as the primary authority.",
+      "Where a later judgment modifies or limits an earlier proposition, use the current legal position.",
+      "Judicial interpretation must remain distinguishable from statutory law and constitutional text.",
+      "A case source must exist in case_registry before it can be used by a doctrine.",
+      "Every judicial day must identify at least one applicable doctrine.",
+      "Every applicable doctrine must contain verified case sources.",
+      "Unresolved judicial sources must block generation."
+    ]
+  },
+
+  "official_source_registry": {
+    "supreme-court-of-india": {
+      "source_id": "supreme-court-of-india",
+      "institution": "Supreme Court of India",
+      "authority_level": "primary",
+      "source_type": "judicial",
+      "status": "authoritative",
+      "description": "Primary institutional source for Supreme Court judgments."
+    },
+    "supreme-court-constitution-bench": {
+      "source_id": "supreme-court-constitution-bench",
+      "institution": "Supreme Court of India",
+      "authority_level": "primary",
+      "source_type": "judicial",
+      "status": "authoritative",
+      "description": "Constitution Bench judgments concerning major constitutional questions."
+    }
+  },
+
+  "case_registry": {
+    "kesavananda-bharati": {
+      "case_id": "kesavananda-bharati",
+      "case_name": "His Holiness Kesavananda Bharati v State of Kerala",
+      "court": "Supreme Court of India",
+      "judgment_date": "24-04-1973",
+      "citation": "1973 Supp SCR 1; (1973) 4 SCC 225",
+      "bench": "13-Judge Constitution Bench",
+      "constitutional_articles": ["13", "368"],
+      "issue": "Extent of Parliament's power to amend the Constitution.",
+      "holding": "The power to amend the Constitution is subject to the basic-structure limitation.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "maneka-gandhi": {
+      "case_id": "maneka-gandhi",
+      "case_name": "Maneka Gandhi v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "25-01-1978",
+      "citation": "1978 2 SCR 621; (1978) 1 SCC 248",
+      "bench": "7-Judge Bench",
+      "constitutional_articles": ["14", "19", "21"],
+      "issue": "Meaning and scope of personal liberty and procedure under Article 21.",
+      "holding": "The procedure affecting personal liberty must satisfy constitutional standards of fairness and cannot be treated as a merely formal procedure.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "minerva-mills": {
+      "case_id": "minerva-mills",
+      "case_name": "Minerva Mills Ltd v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "31-07-1980",
+      "citation": "1981 1 SCR 206; (1980) 3 SCC 625",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["14", "19", "31C", "368"],
+      "issue": "Limits on constitutional amendment power and relationship between Fundamental Rights and Directive Principles.",
+      "holding": "Limited amending power and judicial review form part of the basic structure of the Constitution.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "bandhua-mukti-morcha": {
+      "case_id": "bandhua-mukti-morcha",
+      "case_name": "Bandhua Mukti Morcha v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "16-12-1983",
+      "citation": "(1984) 3 SCC 161",
+      "bench": "3-Judge Bench",
+      "constitutional_articles": ["21", "32"],
+      "issue": "Enforcement of fundamental rights of vulnerable and bonded labourers through public interest proceedings.",
+      "holding": "The Court recognised a broad approach to Article 32 proceedings in matters involving serious violations of fundamental rights of disadvantaged persons.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "hussainara-khatoon": {
+      "case_id": "hussainara-khatoon",
+      "case_name": "Hussainara Khatoon v Home Secretary, State of Bihar",
+      "court": "Supreme Court of India",
+      "judgment_date": "09-03-1979",
+      "citation": "(1980) 1 SCC 81",
+      "bench": "Supreme Court of India",
+      "constitutional_articles": ["21", "39A"],
+      "issue": "Prolonged detention of undertrial prisoners and speedy trial.",
+      "holding": "Speedy trial was recognised as an important component of the protection of life and personal liberty under Article 21.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "dk-basu": {
+      "case_id": "dk-basu",
+      "case_name": "D.K. Basu v State of West Bengal",
+      "court": "Supreme Court of India",
+      "judgment_date": "18-12-1996",
+      "citation": "(1997) 1 SCC 416; 1996 Supp 10 SCR 284",
+      "bench": "2-Judge Bench",
+      "constitutional_articles": ["21", "22"],
+      "issue": "Safeguards against custodial violence and abuse during arrest and detention.",
+      "holding": "The Court laid down safeguards concerning arrest and detention to protect constitutional rights and prevent custodial abuse.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "nilabati-behera": {
+      "case_id": "nilabati-behera",
+      "case_name": "Nilabati Behera v State of Orissa",
+      "court": "Supreme Court of India",
+      "judgment_date": "24-03-1993",
+      "citation": "(1993) 2 SCC 746",
+      "bench": "3-Judge Bench",
+      "constitutional_articles": ["21", "32"],
+      "issue": "Public-law remedy for violation of life and personal liberty.",
+      "holding": "Constitutional courts may grant public-law compensation for established violations of fundamental rights.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "sr-bommai": {
+      "case_id": "sr-bommai",
+      "case_name": "S.R. Bommai v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "11-03-1994",
+      "citation": "(1994) 2 SCR 644",
+      "bench": "9-Judge Bench",
+      "constitutional_articles": ["356", "365"],
+      "issue": "Constitutional limits and judicial review concerning President's Rule.",
+      "holding": "The exercise of power under Article 356 is subject to constitutional limitations and judicial review.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "l-chandra-kumar": {
+      "case_id": "l-chandra-kumar",
+      "case_name": "L. Chandra Kumar v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "18-03-1997",
+      "citation": "1994 Supp 6 SCR 261",
+      "bench": "7-Judge Constitution Bench",
+      "constitutional_articles": ["32", "226", "227"],
+      "issue": "Judicial review by constitutional courts and the role of tribunals.",
+      "holding": "Judicial review by the Supreme Court under Article 32 and High Courts under Articles 226 and 227 is part of the Constitution's basic structure.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "vishaka": {
+      "case_id": "vishaka",
+      "case_name": "Vishaka v State of Rajasthan",
+      "court": "Supreme Court of India",
+      "judgment_date": "13-08-1997",
+      "citation": "(1997) 6 SCC 241; 1997 Supp 3 SCR 404",
+      "bench": "3-Judge Bench",
+      "constitutional_articles": ["14", "15", "19", "21"],
+      "issue": "Protection against sexual harassment at the workplace in the absence of an adequate statutory framework.",
+      "holding": "The Court issued binding guidelines to protect constitutional rights in a legislative vacuum.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "ec-il-karunakar": {
+      "case_id": "ec-il-karunakar",
+      "case_name": "Managing Director, ECIL, Hyderabad v B. Karunakar",
+      "court": "Supreme Court of India",
+      "judgment_date": "01-10-1993",
+      "citation": "(1993) 4 SCC 727",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["14", "21"],
+      "issue": "Natural justice in disciplinary proceedings.",
+      "holding": "Failure to provide the inquiry report in the circumstances addressed by the Court can violate principles of natural justice and fair procedure.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "supreme-court-bar-association": {
+      "case_id": "supreme-court-bar-association",
+      "case_name": "Supreme Court Bar Association v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "17-04-1998",
+      "citation": "(1998) 4 SCC 409",
+      "bench": "5-Judge Bench",
+      "constitutional_articles": ["129", "142"],
+      "issue": "Scope of the Supreme Court's contempt power and Article 142.",
+      "holding": "Article 142 cannot be used to assume powers that belong to another constitutional or statutory authority contrary to the constitutional scheme.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "supreme-court-aor-association": {
+      "case_id": "supreme-court-aor-association",
+      "case_name": "Supreme Court Advocates-on-Record Association v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "16-10-2015",
+      "citation": "(2015) 13 SCR 1",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["124", "217"],
+      "issue": "Judicial appointments and judicial independence.",
+      "holding": "The National Judicial Appointments Commission framework was held unconstitutional, with judicial independence treated as a fundamental constitutional principle.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "ir-coelho": {
+      "case_id": "ir-coelho",
+      "case_name": "I.R. Coelho v State of Tamil Nadu",
+      "court": "Supreme Court of India",
+      "judgment_date": "11-01-2007",
+      "citation": "(2007) 1 SCR 706",
+      "bench": "9-Judge Constitution Bench",
+      "constitutional_articles": ["14", "19", "21", "31B", "368"],
+      "issue": "Judicial review of laws placed in the Ninth Schedule.",
+      "holding": "Constitutional amendments placing laws in the Ninth Schedule after the relevant constitutional developments remain subject to basic-structure review where fundamental rights forming part of the basic structure are affected.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "shreya-singhal": {
+      "case_id": "shreya-singhal",
+      "case_name": "Shreya Singhal v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "24-03-2015",
+      "citation": "(2015) 5 SCR 963",
+      "bench": "2-Judge Bench",
+      "constitutional_articles": ["19", "21"],
+      "issue": "Freedom of speech and restrictions on online expression.",
+      "holding": "Section 66A of the Information Technology Act was held unconstitutional for violating freedom of speech and expression.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "puttaswamy-privacy": {
+      "case_id": "puttaswamy-privacy",
+      "case_name": "Justice K.S. Puttaswamy (Retd.) v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "24-08-2017",
+      "citation": "(2017) 10 SCR 569",
+      "bench": "9-Judge Constitution Bench",
+      "constitutional_articles": ["14", "19", "21"],
+      "issue": "Whether privacy is constitutionally protected.",
+      "holding": "Privacy is a constitutionally protected right arising from the guarantees of dignity, liberty and other fundamental rights.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "navtej-singh-johar": {
+      "case_id": "navtej-singh-johar",
+      "case_name": "Navtej Singh Johar v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "06-09-2018",
+      "citation": "(2018) 7 SCR 379",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["14", "15", "19", "21"],
+      "issue": "Constitutional protection of dignity, equality and individual autonomy.",
+      "holding": "Constitutional rights protect dignity, equality and individual autonomy, and constitutional morality has an important role in rights adjudication.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "joseph-shine": {
+      "case_id": "joseph-shine",
+      "case_name": "Joseph Shine v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "27-09-2018",
+      "citation": "(2018) 11 SCR 765",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["14", "15", "21"],
+      "issue": "Equality, dignity and individual autonomy.",
+      "holding": "The Court invalidated the adultery offence framework as unconstitutional, emphasising equality, dignity and individual autonomy.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "national-legal-services-authority": {
+      "case_id": "national-legal-services-authority",
+      "case_name": "National Legal Services Authority v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "15-04-2014",
+      "citation": "(2014) 5 SCR 119",
+      "bench": "2-Judge Bench",
+      "constitutional_articles": ["14", "15", "16", "19", "21"],
+      "issue": "Equality, dignity and constitutional protection of transgender persons.",
+      "holding": "The Court recognised constitutional equality, dignity and protection for transgender persons.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "sharad-birdhi-chand-sarda": {
+      "case_id": "sharad-birdhi-chand-sarda",
+      "case_name": "Sharad Birdhi Chand Sarda v State of Maharashtra",
+      "court": "Supreme Court of India",
+      "judgment_date": "05-09-1984",
+      "citation": "(1984) 4 SCC 116; 1985 1 SCR 88",
+      "bench": "2-Judge Bench",
+      "constitutional_articles": ["21"],
+      "issue": "Criminal adjudication and assessment of evidence.",
+      "holding": "The Court laid down principles concerning evaluation of circumstantial evidence in criminal cases.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "abhiram-singh": {
+      "case_id": "abhiram-singh",
+      "case_name": "Abhiram Singh v C.D. Commachen",
+      "court": "Supreme Court of India",
+      "judgment_date": "02-11-2017",
+      "citation": "(2017) 2 SCC 629",
+      "bench": "7-Judge Constitution Bench",
+      "constitutional_articles": ["14", "15", "19", "25", "324"],
+      "issue": "Corrupt electoral practices involving appeals on grounds of religion, race, caste, community or language.",
+      "holding": "Section 123(3) of the Representation of the People Act, 1951 was interpreted to prohibit appeals on the specified identity grounds in the electoral context.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "electoral-bonds": {
+      "case_id": "electoral-bonds",
+      "case_name": "Association for Democratic Reforms v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "15-02-2024",
+      "citation": "2024 INSC 113",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["14", "19(1)(a)"],
+      "issue": "Constitutionality of the Electoral Bond Scheme and disclosure of political funding information.",
+      "holding": "The Electoral Bond Scheme and related statutory amendments were held unconstitutional in the judgment of 15 February 2024, including on the basis of citizens' right to information regarding political funding.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "keshavananda-election-basic-structure": {
+      "case_id": "keshavananda-election-basic-structure",
+      "case_name": "Indira Nehru Gandhi v Raj Narain",
+      "court": "Supreme Court of India",
+      "judgment_date": "07-11-1975",
+      "citation": "1975 Supp SCC 1",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["14", "329A", "368"],
+      "issue": "Constitutional amendment and adjudication of election disputes.",
+      "holding": "The Court applied the basic-structure limitation to invalidate constitutional provisions affecting the judicial determination of election disputes.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    },
+
+    "common-cause": {
+      "case_id": "common-cause",
+      "case_name": "Common Cause v Union of India",
+      "court": "Supreme Court of India",
+      "judgment_date": "09-03-2018",
+      "citation": "2018 6 SCR 1",
+      "bench": "5-Judge Constitution Bench",
+      "constitutional_articles": ["21"],
+      "issue": "Right to life, dignity and end-of-life decision-making.",
+      "holding": "The Court recognised dimensions of the right to die with dignity within Article 21 subject to the constitutional and legal safeguards laid down by the Court.",
+      "source": "supreme-court-of-india",
+      "verified": true
+    }
+  },
+
+  "doctrine_registry": {
+    "judicial-review": {
+      "doctrine_id": "judicial-review",
+      "name": "Judicial Review",
+      "constitutional_articles": ["13", "32", "226", "227", "356", "368"],
+      "status": "verified",
+      "case_sources": [
+        "kesavananda-bharati",
+        "minerva-mills",
+        "l-chandra-kumar",
+        "sr-bommai",
+        "ir-coelho"
+      ]
+    },
+
+    "constitutional-interpretation": {
+      "doctrine_id": "constitutional-interpretation",
+      "name": "Constitutional Interpretation",
+      "constitutional_articles": ["13", "14", "19", "21", "32", "141", "142"],
+      "status": "verified",
+      "case_sources": [
+        "maneka-gandhi",
+        "kesavananda-bharati",
+        "puttaswamy-privacy",
+        "navtej-singh-johar",
+        "shreya-singhal"
+      ]
+    },
+
+    "basic-structure": {
+      "doctrine_id": "basic-structure",
+      "name": "Basic Structure Doctrine",
+      "constitutional_articles": ["13", "368"],
+      "status": "verified",
+      "case_sources": [
+        "kesavananda-bharati",
+        "minerva-mills",
+        "keshavananda-election-basic-structure",
+        "ir-coelho"
+      ]
+    },
+
+    "separation-of-powers": {
+      "doctrine_id": "separation-of-powers",
+      "name": "Separation of Powers",
+      "constitutional_articles": ["50", "121", "122", "124", "245", "246", "368"],
+      "status": "verified",
+      "case_sources": [
+        "kesavananda-bharati",
+        "minerva-mills",
+        "sr-bommai",
+        "supreme-court-aor-association"
+      ]
+    },
+
+    "judicial-independence": {
+      "doctrine_id": "judicial-independence",
+      "name": "Judicial Independence",
+      "constitutional_articles": ["50", "124", "125", "217", "220"],
+      "status": "verified",
+      "case_sources": [
+        "supreme-court-aor-association",
+        "kesavananda-bharati"
+      ]
+    },
+
+    "article-21-fair-procedure": {
+      "doctrine_id": "article-21-fair-procedure",
+      "name": "Fair Procedure and Protection of Life and Personal Liberty",
+      "constitutional_articles": ["14", "19", "21", "22"],
+      "status": "verified",
+      "case_sources": [
+        "maneka-gandhi",
+        "dk-basu",
+        "hussainara-khatoon",
+        "nilabati-behera",
+        "puttaswamy-privacy"
+      ]
+    },
+
+    "natural-justice": {
+      "doctrine_id": "natural-justice",
+      "name": "Natural Justice",
+      "constitutional_articles": ["14", "21"],
+      "status": "verified",
+      "case_sources": [
+        "ec-il-karunakar"
+      ]
+    },
+
+    "public-interest-litigation": {
+      "doctrine_id": "public-interest-litigation",
+      "name": "Public Interest Litigation",
+      "constitutional_articles": ["32", "226"],
+      "status": "verified",
+      "case_sources": [
+        "bandhua-mukti-morcha"
+      ]
+    },
+
+    "writ-jurisdiction": {
+      "doctrine_id": "writ-jurisdiction",
+      "name": "Constitutional Writ Jurisdiction",
+      "constitutional_articles": ["32", "226"],
+      "status": "verified",
+      "case_sources": [
+        "l-chandra-kumar",
+        "bandhua-mukti-morcha"
+      ]
+    },
+
+    "access-to-justice": {
+      "doctrine_id": "access-to-justice",
+      "name": "Access to Justice",
+      "constitutional_articles": ["14", "21", "32", "39A"],
+      "status": "verified",
+      "case_sources": [
+        "hussainara-khatoon",
+        "bandhua-mukti-morcha",
+        "national-legal-services-authority"
+      ]
+    },
+
+    "complete-justice": {
+      "doctrine_id": "complete-justice",
+      "name": "Power to Do Complete Justice",
+      "constitutional_articles": ["142"],
+      "status": "verified",
+      "case_sources": [
+        "supreme-court-bar-association"
+      ]
+    },
+
+    "law-declared-by-supreme-court": {
+      "doctrine_id": "law-declared-by-supreme-court",
+      "name": "Law Declared by the Supreme Court",
+      "constitutional_articles": ["141"],
+      "status": "verified",
+      "case_sources": [
+        "kesavananda-bharati",
+        "maneka-gandhi",
+        "l-chandra-kumar"
+      ]
+    },
+
+    "authorities-to-act-in-aid": {
+      "doctrine_id": "authorities-to-act-in-aid",
+      "name": "Authorities to Act in Aid of the Supreme Court",
+      "constitutional_articles": ["144"],
+      "status": "verified",
+      "case_sources": [
+        "supreme-court-bar-association"
+      ]
+    },
+
+    "contempt-jurisdiction": {
+      "doctrine_id": "contempt-jurisdiction",
+      "name": "Contempt Jurisdiction",
+      "constitutional_articles": ["129", "215"],
+      "status": "verified",
+      "case_sources": [
+        "supreme-court-bar-association"
+      ]
+    },
+
+    "constitutional-remedies": {
+      "doctrine_id": "constitutional-remedies",
+      "name": "Constitutional Remedies",
+      "constitutional_articles": ["32", "226"],
+      "status": "verified",
+      "case_sources": [
+        "l-chandra-kumar",
+        "bandhua-mukti-morcha",
+        "nilabati-behera"
+      ]
+    },
+
+    "constitutional-morality": {
+      "doctrine_id": "constitutional-morality",
+      "name": "Constitutional Morality",
+      "constitutional_articles": ["14", "15", "19", "21"],
+      "status": "verified",
+      "case_sources": [
+        "navtej-singh-johar",
+        "joseph-shine"
+      ]
+    },
+
+    "electoral-constitutional-review": {
+      "doctrine_id": "electoral-constitutional-review",
+      "name": "Constitutional Review of Electoral Processes",
+      "constitutional_articles": ["14", "19", "324", "327"],
+      "status": "verified",
+      "case_sources": [
+        "electoral-bonds",
+        "abhiram-singh",
+        "keshavananda-election-basic-structure"
+      ]
+    }
+  },
+
+  "days": {
+    "41": {
+      "status": "verified",
+      "doctrines": [
+        "article-21-fair-procedure"
+      ]
+    },
+    "42": {
+      "status": "verified",
+      "doctrines": [
+        "article-21-fair-procedure"
+      ]
+    },
+    "58": {
+      "status": "verified",
+      "doctrines": [
+        "constitutional-morality"
+      ]
+    },
+    "84": {
+      "status": "verified",
+      "doctrines": [
+        "article-21-fair-procedure",
+        "constitutional-interpretation"
+      ]
+    },
+    "85": {
+      "status": "verified",
+      "doctrines": [
+        "article-21-fair-procedure"
+      ]
+    },
+    "86": {
+      "status": "verified",
+      "doctrines": [
+        "article-21-fair-procedure"
+      ]
+    },
+    "88": {
+      "status": "verified",
+      "doctrines": [
+        "article-21-fair-procedure"
+      ]
+    },
+
+    "191": {
+      "status": "verified",
+      "doctrines": [
+        "separation-of-powers",
+        "judicial-review"
+      ]
+    },
+    "225": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-review"
+      ]
+    },
+    "235": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-independence"
+      ]
+    },
+    "239": {
+      "status": "verified",
+      "doctrines": [
+        "constitutional-remedies"
+      ]
+    },
+    "240": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-review"
+      ]
+    },
+
+    "248": {
+      "status": "verified",
+      "doctrines": [
+        "access-to-justice"
+      ]
+    },
+    "249": {
+      "status": "verified",
+      "doctrines": [
+        "public-interest-litigation",
+        "access-to-justice"
+      ]
+    },
+    "251": {
+      "status": "verified",
+      "doctrines": [
+        "separation-of-powers"
+      ]
+    },
+    "252": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-review"
+      ]
+    },
+    "253": {
+      "status": "verified",
+      "doctrines": [
+        "separation-of-powers"
+      ]
+    },
+    "254": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-review",
+        "basic-structure"
+      ]
+    },
+    "255": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-review"
+      ]
+    },
+    "256": {
+      "status": "verified",
+      "doctrines": [
+        "constitutional-interpretation",
+        "law-declared-by-supreme-court"
+      ]
+    },
+    "257": {
+      "status": "verified",
+      "doctrines": [
+        "law-declared-by-supreme-court"
+      ]
+    },
+    "258": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-independence"
+      ]
+    },
+    "259": {
+      "status": "verified",
+      "doctrines": [
+        "contempt-jurisdiction",
+        "complete-justice"
+      ]
+    },
+    "260": {
+      "status": "verified",
+      "doctrines": [
+        "natural-justice"
+      ]
+    },
+    "261": {
+      "status": "verified",
+      "doctrines": [
+        "writ-jurisdiction",
+        "constitutional-remedies"
+      ]
+    },
+    "262": {
+      "status": "verified",
+      "doctrines": [
+        "access-to-justice",
+        "article-21-fair-procedure"
+      ]
+    },
+    "263": {
+      "status": "verified",
+      "doctrines": [
+        "access-to-justice",
+        "constitutional-remedies"
+      ]
+    },
+    "266": {
+      "status": "verified",
+      "doctrines": [
+        "article-21-fair-procedure"
+      ]
+    },
+    "267": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-independence",
+        "constitutional-interpretation"
+      ]
+    },
+    "268": {
+      "status": "verified",
+      "doctrines": [
+        "judicial-independence"
+      ]
+    },
+    "270": {
+      "status": "verified",
+      "doctrines": [
+        "access-to-justice",
+        "constitutional-remedies"
+      ]
+    },
+
+    "292": {
+      "status": "verified",
+      "doctrines": [
+        "electoral-constitutional-review"
+      ]
+    },
+    "293": {
+      "status": "verified",
+      "doctrines": [
+        "electoral-constitutional-review"
+      ]
+    },
+    "294": {
+      "status": "verified",
+      "doctrines": [
+        "electoral-constitutional-review"
+      ]
+    },
+    "299": {
+      "status": "verified",
+      "doctrines": [
+        "electoral-constitutional-review"
+      ]
+    },
+    "331": {
+      "status": "verified",
+      "doctrines": [
+        "separation-of-powers",
+        "judicial-independence"
+      ]
+    },
+    "343": {
+      "status": "verified",
+      "doctrines": [
+        "constitutional-interpretation",
+        "judicial-review"
+      ]
+    }
+  },
+
+  "validation": {
+    "required_fields_for_case": [
+      "case_id",
+      "case_name",
+      "court",
+      "judgment_date",
+      "citation",
+      "bench",
+      "constitutional_articles",
+      "issue",
+      "holding",
+      "source"
+    ],
+    "required_fields_for_doctrine_mapping": [
+      "doctrine_id",
+      "case_sources"
+    ],
+    "generation_rule": "A judicial lesson may be generated only when its day is verified, every declared doctrine exists, every doctrine is verified and every case source exists in case_registry.",
+    "unresolved_source_rule": "Any judicial day or doctrine marked unresolved must block generation.",
+    "case_registry_rule": "A case must not be referenced by a doctrine unless it exists in case_registry.",
+    "precedent_rule": "Where later authoritative precedent changes the legal position, the current position must be used.",
+    "source_distinction_rule": "Judicial holdings must never be presented as literal constitutional or statutory text."
+  }
+}

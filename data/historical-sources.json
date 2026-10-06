@@ -1,0 +1,172 @@
+{
+  "course": "Constitution 365",
+  "language": "te",
+  "country": "India",
+  "purpose": "Authoritative historical-source map for Constitution 365 lessons that require historical and Constituent Assembly context in addition to the constitutional text.",
+  "source_policy": [
+    "Use the listed historical sources as the foundation for historical claims.",
+    "Do not present historical context as though it were constitutional text.",
+    "Do not invent historical facts, quotations, dates, participants, debates or intentions.",
+    "Where a lesson concerns the Constituent Assembly, distinguish the Assembly's historical proceedings from the Constitution as finally adopted.",
+    "Use Constituent Assembly Debates for debate-related claims and official constitutional material for constitutional-history claims.",
+    "If a historical detail is not supported by the listed source, omit it rather than guessing."
+  ],
+  "primary_historical_sources": [
+    {
+      "id": "constituent-assembly-debates",
+      "title": "Constituent Assembly Debates",
+      "authority": "Parliament of India",
+      "subject": "Debates and proceedings of the Constituent Assembly"
+    },
+    {
+      "id": "parliament-constituent-assembly-material",
+      "title": "Constituent Assembly material",
+      "authority": "Parliament of India",
+      "subject": "Historical records relating to the making of the Constitution"
+    },
+    {
+      "id": "constitution-of-india-historical-context",
+      "title": "Constitution of India",
+      "authority": "Government of India",
+      "subject": "Adoption and commencement of the Constitution and constitutional historical context"
+    }
+  ],
+  "days": {
+    "6": {
+      "sources": [
+        "constituent-assembly-debates",
+        "parliament-constituent-assembly-material"
+      ],
+      "historical_focus": [
+        "India before independence",
+        "Historical background relevant to the making of the Constitution"
+      ],
+      "use": "Use historical sources to explain the pre-independence context that led to constitution-making."
+    },
+    "7": {
+      "sources": [
+        "parliament-constituent-assembly-material",
+        "constitution-of-india-historical-context"
+      ],
+      "historical_focus": [
+        "Indian independence",
+        "Transition from colonial rule to constitutional government"
+      ],
+      "use": "Use the historical record to explain the transition from independence to the creation of the constitutional system."
+    },
+    "8": {
+      "sources": [
+        "constituent-assembly-debates",
+        "parliament-constituent-assembly-material"
+      ],
+      "historical_focus": [
+        "Constituent Assembly",
+        "Formation and functioning of the Assembly"
+      ],
+      "use": "Use official Constituent Assembly material for explanations of the Assembly and its role in constitution-making."
+    },
+    "9": {
+      "sources": [
+        "constituent-assembly-debates",
+        "parliament-constituent-assembly-material"
+      ],
+      "historical_focus": [
+        "Why a Constituent Assembly was needed",
+        "Constitution-making process"
+      ],
+      "use": "Use the historical record to explain the historical need for a Constituent Assembly."
+    },
+    "10": {
+      "sources": [
+        "constituent-assembly-debates",
+        "parliament-constituent-assembly-material"
+      ],
+      "historical_focus": [
+        "Who made the Constitution",
+        "Members and institutional process of the Constituent Assembly"
+      ],
+      "use": "Use official Assembly records to explain participation in constitution-making without inventing biographical or political claims."
+    },
+    "11": {
+      "sources": [
+        "constituent-assembly-debates",
+        "parliament-constituent-assembly-material"
+      ],
+      "historical_focus": [
+        "B. R. Ambedkar",
+        "Role in constitution-making"
+      ],
+      "use": "Use Constituent Assembly records and official historical material to describe Ambedkar's role in the constitution-making process."
+    },
+    "12": {
+      "sources": [
+        "constituent-assembly-debates",
+        "parliament-constituent-assembly-material"
+      ],
+      "historical_focus": [
+        "How the Constituent Assembly worked",
+        "Debate and constitution-making procedure"
+      ],
+      "use": "Use Assembly proceedings to explain how constitutional proposals were debated and considered."
+    },
+    "13": {
+      "sources": [
+        "constituent-assembly-debates"
+      ],
+      "historical_focus": [
+        "Importance of debate",
+        "Constitutional deliberation"
+      ],
+      "use": "Use recorded Constituent Assembly debates to demonstrate the deliberative nature of constitution-making."
+    },
+    "14": {
+      "sources": [
+        "constituent-assembly-debates",
+        "parliament-constituent-assembly-material",
+        "constitution-of-india-historical-context"
+      ],
+      "historical_focus": [
+        "Duration of constitution-making",
+        "9 December 1946",
+        "26 November 1949",
+        "26 January 1950"
+      ],
+      "use": "Use official historical records for the timeline from the first meeting of the Constituent Assembly through adoption and commencement of the Constitution."
+    },
+    "15": {
+      "sources": [
+        "constituent-assembly-debates",
+        "constitution-of-india-historical-context"
+      ],
+      "historical_focus": [
+        "26 November 1949",
+        "Adoption of the Constitution"
+      ],
+      "use": "Use official constitutional history to explain the significance of 26 November 1949 as the date on which the Constitution was adopted."
+    },
+    "16": {
+      "sources": [
+        "constituent-assembly-debates",
+        "constitution-of-india-historical-context"
+      ],
+      "historical_focus": [
+        "Constitution Day",
+        "26 November",
+        "Constitutional adoption"
+      ],
+      "use": "Explain the historical significance of 26 November using official constitutional-history material."
+    },
+    "17": {
+      "sources": [
+        "constitution-of-india-historical-context",
+        "parliament-constituent-assembly-material"
+      ],
+      "historical_focus": [
+        "26 January 1950",
+        "Commencement of the Constitution",
+        "Republic of India"
+      ],
+      "use": "Use official historical material to explain the commencement of the Constitution on 26 January 1950 and its constitutional significance."
+    }
+  }
+}

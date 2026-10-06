@@ -1,0 +1,298 @@
+{
+  "file": "official-sources.json",
+  "version": "1.0",
+  "title": "Authoritative Official Institutional Sources for Constitution 365",
+  "purpose": "Authoritative institutional source map for Constitution 365 lessons requiring official information about constitutional institutions, elections, Parliament, government bodies, commissions, public administration, and other official constitutional or statutory institutions.",
+
+  "source_policy": {
+    "primary_authority": [
+      "Official Government of India websites",
+      "Official Parliament of India sources",
+      "Official Supreme Court of India sources",
+      "Official Election Commission of India sources",
+      "Official constitutional and statutory commissions",
+      "Official State Government sources where State-specific information is required"
+    ],
+
+    "rules": [
+      "Official institutional information must not be presented as constitutional text unless the Constitution itself supports the proposition.",
+      "Institutional websites may explain functions, procedures, publications, notifications, reports, or administrative information, but they do not replace the Constitution or an Act of Parliament.",
+      "Do not invent powers, duties, procedures, offices, dates, statistics, notifications, or institutional responsibilities.",
+      "Where an official source describes a statutory institution, the underlying Act remains the legal authority.",
+      "Where an official source describes a constitutional institution, the relevant constitutional provision remains the primary constitutional authority.",
+      "Current institutional information must be verified against the latest official source available at generation time.",
+      "Historical institutional information must be identified as historical and must not be presented as current.",
+      "Government press releases and administrative pages must not be treated as judicial precedent.",
+      "Election information must be sourced from the Election Commission of India or another directly authoritative election institution.",
+      "Parliamentary procedure information must be sourced from Parliament of India or the applicable official legislative rules.",
+      "State-specific information must use the relevant State Government or State constitutional/statutory institution source.",
+      "If an official source cannot be verified, the corresponding proposition must be marked unresolved rather than guessed."
+    ]
+  },
+
+  "institution_registry": {
+
+    "parliament-of-india": {
+      "source_id": "parliament-of-india",
+      "institution": "Parliament of India",
+      "authority_level": "primary",
+      "source_type": "official-institutional",
+      "status": "authoritative",
+      "coverage": [
+        "Parliament",
+        "Lok Sabha",
+        "Rajya Sabha",
+        "Parliamentary procedure",
+        "Bills",
+        "Legislative business",
+        "Parliamentary committees",
+        "Parliamentary publications"
+      ]
+    },
+
+    "lok-sabha": {
+      "source_id": "lok-sabha",
+      "institution": "Lok Sabha",
+      "authority_level": "primary",
+      "source_type": "official-institutional",
+      "status": "authoritative",
+      "coverage": [
+        "House of the People",
+        "Lok Sabha procedure",
+        "Members",
+        "Legislative business",
+        "Parliamentary committees"
+      ]
+    },
+
+    "rajya-sabha": {
+      "source_id": "rajya-sabha",
+      "institution": "Rajya Sabha",
+      "authority_level": "primary",
+      "source_type": "official-institutional",
+      "status": "authoritative",
+      "coverage": [
+        "Council of States",
+        "Rajya Sabha procedure",
+        "Members",
+        "Legislative business",
+        "Parliamentary committees"
+      ]
+    },
+
+    "election-commission-of-india": {
+      "source_id": "election-commission-of-india",
+      "institution": "Election Commission of India",
+      "authority_level": "primary",
+      "source_type": "constitutional-institution",
+      "status": "authoritative",
+      "coverage": [
+        "Elections",
+        "Electoral rolls",
+        "Election administration",
+        "Political parties",
+        "Election procedures",
+        "Election statistics",
+        "Model Code of Conduct",
+        "Electoral information"
+      ]
+    },
+
+    "comptroller-and-auditor-general": {
+      "source_id": "comptroller-and-auditor-general",
+      "institution": "Comptroller and Auditor General of India",
+      "authority_level": "primary",
+      "source_type": "constitutional-institution",
+      "status": "authoritative",
+      "coverage": [
+        "Public audit",
+        "Government accounts",
+        "Audit reports",
+        "Constitutional role of CAG"
+      ]
+    },
+
+    "union-public-service-commission": {
+      "source_id": "union-public-service-commission",
+      "institution": "Union Public Service Commission",
+      "authority_level": "primary",
+      "source_type": "constitutional-institution",
+      "status": "authoritative",
+      "coverage": [
+        "Union Public Service Commission",
+        "Recruitment",
+        "Examinations",
+        "Constitutional functions"
+      ]
+    },
+
+    "finance-commission-of-india": {
+      "source_id": "finance-commission-of-india",
+      "institution": "Finance Commission of India",
+      "authority_level": "primary",
+      "source_type": "constitutional-institution",
+      "status": "authoritative",
+      "coverage": [
+        "Finance Commission",
+        "Fiscal relations",
+        "Tax devolution",
+        "Grants-in-aid",
+        "Recommendations"
+      ]
+    },
+
+    "niti-aayog": {
+      "source_id": "niti-aayog",
+      "institution": "NITI Aayog",
+      "authority_level": "official",
+      "source_type": "official-institutional",
+      "status": "authoritative-for-published-institutional-material",
+      "coverage": [
+        "Government policy",
+        "Development programmes",
+        "Policy reports",
+        "Cooperative federalism"
+      ]
+    },
+
+    "ministry-of-law-and-justice": {
+      "source_id": "ministry-of-law-and-justice",
+      "institution": "Ministry of Law and Justice",
+      "authority_level": "primary-official",
+      "source_type": "official-government",
+      "status": "authoritative",
+      "coverage": [
+        "Legislation",
+        "Legal information",
+        "Constitutional information",
+        "Government legal administration"
+      ]
+    },
+
+    "legislative-department": {
+      "source_id": "legislative-department",
+      "institution": "Legislative Department, Ministry of Law and Justice",
+      "authority_level": "primary-official",
+      "source_type": "official-government",
+      "status": "authoritative",
+      "coverage": [
+        "Central legislation",
+        "Acts",
+        "Bills",
+        "Constitutional publications",
+        "Legislative material"
+      ]
+    },
+
+    "department-of-personnel-and-training": {
+      "source_id": "department-of-personnel-and-training",
+      "institution": "Department of Personnel and Training",
+      "authority_level": "official",
+      "source_type": "official-government",
+      "status": "authoritative-for-published-administrative-material",
+      "coverage": [
+        "Civil services",
+        "Public administration",
+        "Government personnel",
+        "Administrative rules"
+      ]
+    },
+
+    "supreme-court-of-india": {
+      "source_id": "supreme-court-of-india",
+      "institution": "Supreme Court of India",
+      "authority_level": "primary",
+      "source_type": "judicial-institution",
+      "status": "authoritative",
+      "coverage": [
+        "Judgments",
+        "Constitution Bench decisions",
+        "Court procedure",
+        "Judicial administration",
+        "Official judicial information"
+      ]
+    },
+
+    "attorney-general-for-india": {
+      "source_id": "attorney-general-for-india",
+      "institution": "Attorney General for India",
+      "authority_level": "official",
+      "source_type": "constitutional-office",
+      "status": "authoritative-for-official-office-information",
+      "coverage": [
+        "Attorney General",
+        "Constitutional office",
+        "Official institutional information"
+      ]
+    },
+
+    "comptroller-auditor-general": {
+      "source_id": "comptroller-auditor-general",
+      "institution": "Comptroller and Auditor General of India",
+      "authority_level": "primary",
+      "source_type": "constitutional-institution",
+      "status": "authoritative",
+      "coverage": [
+        "Audit",
+        "Accounts",
+        "Public expenditure",
+        "Constitutional audit functions"
+      ]
+    }
+  },
+
+  "source_categories": {
+    "constitutional_institutions": [
+      "election-commission-of-india",
+      "comptroller-and-auditor-general",
+      "union-public-service-commission",
+      "finance-commission-of-india",
+      "supreme-court-of-india"
+    ],
+
+    "parliamentary_institutions": [
+      "parliament-of-india",
+      "lok-sabha",
+      "rajya-sabha"
+    ],
+
+    "executive_and_administrative_institutions": [
+      "ministry-of-law-and-justice",
+      "legislative-department",
+      "department-of-personnel-and-training",
+      "niti-aayog"
+    ],
+
+    "constitutional_offices": [
+      "attorney-general-for-india"
+    ]
+  },
+
+  "days": {},
+
+  "validation": {
+    "required_fields_for_source": [
+      "source_id",
+      "institution",
+      "authority_level",
+      "source_type",
+      "status"
+    ],
+
+    "required_fields_for_day_mapping": [
+      "day",
+      "source_ids",
+      "purpose"
+    ],
+
+    "generation_rule": "A lesson requiring current official institutional information must not be generated as verified current information unless the relevant official source is identified.",
+
+    "constitutional_distinction_rule": "Official institutional material must not be used as a substitute for the constitutional text.",
+
+    "statutory_distinction_rule": "Official institutional information concerning a statutory body must be checked against the enabling legislation.",
+
+    "current_information_rule": "Time-sensitive institutional information must be verified against the latest authoritative official source before generation.",
+
+    "unresolved_source_rule": "If a required official source cannot be verified, the generator must mark the source unresolved and block unsupported claims."
+  }
+}
