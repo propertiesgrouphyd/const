@@ -363,7 +363,6 @@ function determineRequiredLayers() {
       ? constitutionalEntry.additional_sources
       : [];
 
-
   /* ---------------------------------------------------------------
      Historical
   ---------------------------------------------------------------- */
@@ -895,7 +894,7 @@ function validateOfficialSources() {
     "unresolved"
   ) {
     errors.push(
-      `Day ${DAY}: official source entry is unresolved`
+      `Day ${DAY}: official source is unresolved`
     );
   }
 
@@ -1501,133 +1500,6 @@ No trailing commas.
 
 
 /* ==========================================================================
-   GROQ CALL
-========================================================================== */
-
-async function callGroq() {
-  const key =
-    process.env.GROQ_API_KEY;
-
-  if (!key) {
-    throw new Error(
-      "GROQ_API_KEY is missing"
-    );
-  }
-
-  let lastError;
-
-  for (
-    let attempt = 1;
-    attempt <= 3;
-    attempt++
-  ) {
-    try {
-      const response =
-        await fetch(
-          "https://api.groq.com/openai/v1/chat/completions",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              Authorization:
-                `Bearer ${key}`
-            },
-
-            body:
-              JSON.stringify({
-                model:
-                  process.env.GROQ_MODEL ||
-                  "openai/gpt-oss-120b",
-
-                temperature:
-                  0.35,
-
-                reasoning_effort:
-                  "high",
-
-                max_tokens:
-                  10000,
-
-                response_format: {
-                  type: "json_object"
-                },
-
-                messages: [
-                  {
-                    role: "system",
-
-                    content:
-                      "You are an exceptionally careful constitutional educator and Telugu editor. Return only valid JSON. Never invent unsupported constitutional, legal, historical or judicial facts."
-                  },
-
-                  {
-                    role: "user",
-
-                    content:
-                      prompt
-                  }
-                ]
-              })
-          }
-        );
-
-      if (!response.ok) {
-        const body =
-          await response.text();
-
-        throw new Error(
-          `Groq HTTP ${response.status}: ${body}`
-        );
-      }
-
-      const json =
-        await response.json();
-
-      const content =
-        json?.choices?.[0]?.message?.content;
-
-      if (!content) {
-        throw new Error(
-          "Groq returned no content"
-        );
-      }
-
-      try {
-        return JSON.parse(
-          content
-        );
-      } catch (parseError) {
-        throw new Error(
-          `Groq returned invalid JSON: ${parseError.message}`
-        );
-      }
-
-    } catch (error) {
-      lastError =
-        error;
-
-      if (
-        attempt < 3
-      ) {
-        await new Promise(
-          resolve =>
-            setTimeout(
-              resolve,
-              2000 * attempt
-            )
-        );
-      }
-    }
-  }
-
-  throw lastError;
-}
-
-
-/* ==========================================================================
    TELUGU CONTENT VALIDATION
 ========================================================================== */
 
@@ -1636,6 +1508,60 @@ function containsTelugu(value) {
     typeof value === "string" &&
     /[\u0C00-\u0C7F]/.test(value)
   );
+}
+
+
+function containsEnglishLetters(value) {
+  return (
+    typeof value === "string" &&
+    /[A-Za-z]/.test(value)
+  );
+}
+
+
+function validateLearnerFacingString(
+  value,
+  fieldName
+) {
+  const errors = [];
+
+  if (
+    typeof value !== "string"
+  ) {
+    errors.push(
+      `${fieldName} must be a string`
+    );
+
+    return errors;
+  }
+
+  if (
+    value.trim() === ""
+  ) {
+    errors.push(
+      `${fieldName} must not be empty`
+    );
+
+    return errors;
+  }
+
+  if (
+    !containsTelugu(value)
+  ) {
+    errors.push(
+      `${fieldName} must contain Telugu text`
+    );
+  }
+
+  if (
+    containsEnglishLetters(value)
+  ) {
+    errors.push(
+      `${fieldName} contains English letters`
+    );
+  }
+
+  return errors;
 }
 
 
@@ -1656,88 +1582,98 @@ function validateTeluguContent(x) {
     const field
     of textFields
   ) {
-    if (
-      typeof x[field] !== "string" ||
-      !containsTelugu(x[field])
-    ) {
-      errors.push(
-        `${field} must contain Telugu text`
-      );
-    }
+    errors.push(
+      ...validateLearnerFacingString(
+        x[field],
+        field
+      )
+    );
   }
 
   if (
-    Array.isArray(x.examples)
+    !Array.isArray(x.examples)
   ) {
+    errors.push(
+      "examples must be an array"
+    );
+  } else {
     x.examples.forEach(
       (example, index) => {
-        if (
-          typeof example !== "string" ||
-          !containsTelugu(example)
-        ) {
-          errors.push(
-            `Example ${index + 1} must contain Telugu text`
-          );
-        }
+        errors.push(
+          ...validateLearnerFacingString(
+            example,
+            `Example ${index + 1}`
+          )
+        );
       }
     );
   }
 
   if (
-    Array.isArray(x.mcqs)
+    !Array.isArray(x.mcqs)
   ) {
-    x.mcqs.forEach(
-      (mcq, index) => {
+    errors.push(
+      "mcqs must be an array"
+    );
 
-        if (
-          !containsTelugu(
-            mcq.question
-          )
-        ) {
-          errors.push(
-            `MCQ ${index + 1} question must contain Telugu text`
-          );
-        }
+    return errors;
+  }
 
-        for (
-          const [optionIndex, option]
-          of (
-            Array.isArray(mcq.options)
-              ? mcq.options
-              : []
-          ).entries()
-        ) {
-          if (
-            !containsTelugu(option)
-          ) {
+  x.mcqs.forEach(
+    (mcq, index) => {
+
+      if (
+        !mcq ||
+        typeof mcq !== "object"
+      ) {
+        errors.push(
+          `MCQ ${index + 1} must be an object`
+        );
+
+        return;
+      }
+
+      errors.push(
+        ...validateLearnerFacingString(
+          mcq.question,
+          `MCQ ${index + 1} question`
+        )
+      );
+
+      if (
+        !Array.isArray(mcq.options)
+      ) {
+        errors.push(
+          `MCQ ${index + 1} options must be an array`
+        );
+      } else {
+        mcq.options.forEach(
+          (option, optionIndex) => {
             errors.push(
-              `MCQ ${index + 1} option ${optionIndex + 1} must contain Telugu text`
+              ...validateLearnerFacingString(
+                option,
+                `MCQ ${index + 1} option ${optionIndex + 1}`
+              )
             );
           }
-        }
-
-        if (
-          !containsTelugu(
-            mcq.answer
-          )
-        ) {
-          errors.push(
-            `MCQ ${index + 1} answer must contain Telugu text`
-          );
-        }
-
-        if (
-          !containsTelugu(
-            mcq.explanation
-          )
-        ) {
-          errors.push(
-            `MCQ ${index + 1} explanation must contain Telugu text`
-          );
-        }
+        );
       }
-    );
-  }
+
+      errors.push(
+        ...validateLearnerFacingString(
+          mcq.answer,
+          `MCQ ${index + 1} answer`
+        )
+      );
+
+      errors.push(
+        ...validateLearnerFacingString(
+          mcq.explanation,
+          `MCQ ${index + 1} explanation`
+        )
+      );
+    }
+  );
 
   return errors;
 }
@@ -1836,6 +1772,7 @@ function validateGeneratedContent(x) {
 
   x.mcqs.forEach(
     (mcq, index) => {
+
       if (
         !mcq ||
         typeof mcq.question !== "string" ||
@@ -1965,15 +1902,6 @@ function restoreAuthoritativeFields(
   generated.day =
     DAY;
 
-  generated.title =
-    syllabusEntry.title;
-
-  generated.stage =
-    syllabusEntry.stage;
-
-  generated.focus =
-    syllabusEntry.focus;
-
   generated.constitutional_reference = {
     articles:
       constitutionalEntry.articles ||
@@ -2072,19 +2000,6 @@ function validateFinalOutput(
   ) {
     throw new Error(
       "Final output day mismatch"
-    );
-  }
-
-  if (
-    output.title !==
-      syllabusEntry.title ||
-    output.stage !==
-      syllabusEntry.stage ||
-    output.focus !==
-      syllabusEntry.focus
-  ) {
-    throw new Error(
-      "Final output syllabus fields do not match authoritative syllabus"
     );
   }
 
@@ -2211,6 +2126,194 @@ function validateFinalOutput(
 
 
 /* ==========================================================================
+   GROQ GENERATION WITH CONTENT RETRIES
+========================================================================== */
+
+async function generateAndValidate() {
+  const key =
+    process.env.GROQ_API_KEY;
+
+  if (!key) {
+    throw new Error(
+      "GROQ_API_KEY is missing"
+    );
+  }
+
+  let lastError;
+
+  const MAX_ATTEMPTS = 5;
+
+  for (
+    let attempt = 1;
+    attempt <= MAX_ATTEMPTS;
+    attempt++
+  ) {
+    try {
+      console.log("");
+      console.log(
+        `Generation attempt ${attempt}/${MAX_ATTEMPTS}...`
+      );
+
+      const response =
+        await fetch(
+          "https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${key}`
+            },
+
+            body:
+              JSON.stringify({
+                model:
+                  process.env.GROQ_MODEL ||
+                  "openai/gpt-oss-120b",
+
+                temperature:
+                  0.35,
+
+                reasoning_effort:
+                  "high",
+
+                max_tokens:
+                  10000,
+
+                response_format: {
+                  type: "json_object"
+                },
+
+                messages: [
+                  {
+                    role: "system",
+
+                    content:
+                      "You are an exceptionally careful constitutional educator and Telugu editor. Return only valid JSON. Never invent unsupported constitutional, legal, historical or judicial facts."
+                  },
+
+                  {
+                    role: "user",
+
+                    content:
+                      prompt
+                  }
+                ]
+              })
+          }
+        );
+
+      if (!response.ok) {
+        const body =
+          await response.text();
+
+        throw new Error(
+          `Groq HTTP ${response.status}: ${body}`
+        );
+      }
+
+      const json =
+        await response.json();
+
+      const content =
+        json?.choices?.[0]?.message?.content;
+
+      if (!content) {
+        throw new Error(
+          "Groq returned no content"
+        );
+      }
+
+      let generated;
+
+      try {
+        generated =
+          JSON.parse(
+            content
+          );
+      } catch (parseError) {
+        throw new Error(
+          `Groq returned invalid JSON: ${parseError.message}`
+        );
+      }
+
+      /*
+       * IMPORTANT:
+       * Content validation failures are recoverable.
+       * Generate again instead of terminating immediately.
+       */
+
+      try {
+        generated =
+          validateGeneratedContent(
+            generated
+          );
+
+        console.log(
+          "AI content validation passed."
+        );
+
+        return generated;
+
+      } catch (validationError) {
+        lastError =
+          validationError;
+
+        console.error(
+          `Content validation failed on attempt ${attempt}: ${validationError.message}`
+        );
+
+        if (
+          attempt < MAX_ATTEMPTS
+        ) {
+          console.log(
+            "Retrying generation..."
+          );
+
+          await new Promise(
+            resolve =>
+              setTimeout(
+                resolve,
+                1500 * attempt
+              )
+          );
+        }
+      }
+
+    } catch (error) {
+      lastError =
+        error;
+
+      console.error(
+        `Generation attempt ${attempt} failed: ${error.message}`
+      );
+
+      if (
+        attempt < MAX_ATTEMPTS
+      ) {
+        console.log(
+          "Retrying Groq request..."
+        );
+
+        await new Promise(
+          resolve =>
+            setTimeout(
+              resolve,
+              2000 * attempt
+            )
+        );
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+
+/* ==========================================================================
    GENERATION
 ========================================================================== */
 
@@ -2260,13 +2363,7 @@ function validateFinalOutput(
   );
 
   const generated =
-    validateGeneratedContent(
-      await callGroq()
-    );
-
-  console.log(
-    "AI content validation passed."
-  );
+    await generateAndValidate();
 
   const finalOutput =
     restoreAuthoritativeFields(
