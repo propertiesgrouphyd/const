@@ -526,11 +526,37 @@
       ],
       "note": "Article 24 is supplemented by the statutory child-labour framework."
     },
+    "246": {
+      "articles": [
+        "39A"
+      ],
+      "parts": [
+        "Part IV — Directive Principles of State Policy"
+      ],
+      "references": [
+        "Article 39A — equal justice and free legal aid"
+      ],
+      "coverage": "partial",
+      "legal_sources": [
+        "legal-services-authorities-act-1987"
+      ]
+    },
+
     "247": {
+      "articles": [
+        "39A"
+      ],
+      "parts": [
+        "Part IV — Directive Principles of State Policy"
+      ],
+      "references": [
+        "Article 39A — equal justice and free legal aid"
+      ],
+      "coverage": "partial",
       "legal_sources": [
         "legal-services-authorities-act-1987"
       ],
-      "note": "The Act expressly provides for legal services authorities and Lok Adalats."
+      "note": "Lok Adalats are a statutory mechanism; Article 39A alone is not sufficient."
     },
     "259": {
       "legal_sources": [
