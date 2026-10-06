@@ -14,23 +14,44 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: constitution-365-generator
+  cancel-in-progress: false
+
 jobs:
   generate:
     runs-on: ubuntu-latest
 
     steps:
+
+      # ============================================================
+      # CHECKOUT
+      # ============================================================
+
       - name: Checkout
         uses: actions/checkout@v4
+
+
+      # ============================================================
+      # NODE.JS
+      # ============================================================
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
+
+      # ============================================================
+      # DETERMINE CONSTITUTION 365 DAY
+      # ============================================================
+
       - name: Determine Day
         id: day
         shell: bash
         run: |
+          set -euo pipefail
+
           if [ -n "${{ inputs.day }}" ]; then
             DAY="${{ inputs.day }}"
           else
@@ -43,51 +64,229 @@ jobs:
             DAY=$(( (TODAY_TS - START_TS) / 86400 + 1 ))
           fi
 
-          if [ "$DAY" -lt 1 ] || [ "$DAY" -gt 365 ]; then
-            echo "Invalid Constitution 365 day: $DAY"
+          if ! [[ "$DAY" =~ ^[0-9]+$ ]]; then
+            echo "ERROR: Day must be a number."
             exit 1
           fi
 
-          echo "Generating Day $DAY"
+          if [ "$DAY" -lt 1 ] || [ "$DAY" -gt 365 ]; then
+            echo "ERROR: Invalid Constitution 365 day: $DAY"
+            exit 1
+          fi
+
+          echo "=========================================="
+          echo "CONSTITUTION 365"
+          echo "=========================================="
+          echo "Generating Day: $DAY"
+
+          if [ -z "${{ inputs.day }}" ]; then
+            echo "Mode: Automatic"
+            echo "IST Date: $TODAY"
+            echo "Start Date: $START_DATE"
+          else
+            echo "Mode: Manual"
+          fi
+
+          echo "=========================================="
+
           echo "day=$DAY" >> "$GITHUB_OUTPUT"
+
+
+      # ============================================================
+      # GENERATE DAILY CONSTITUTION CONTENT
+      # ============================================================
 
       - name: Generate Daily Constitution Content
         env:
           DAY: ${{ steps.day.outputs.day }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GROQ_MODEL: openai/gpt-oss-120b
-        run: node generator.js
+        run: |
+          set -euo pipefail
+
+          node generator.js
+
+
+      # ============================================================
+      # VERIFY GENERATED JSON
+      # ============================================================
 
       - name: Verify Generated JSON
         shell: bash
         run: |
+          set -euo pipefail
+
           DAY="${{ steps.day.outputs.day }}"
           FILE="data/day-$(printf '%03d' "$DAY").json"
+
+          echo "Verifying: $FILE"
 
           if [ ! -f "$FILE" ]; then
             echo "ERROR: Generated file not found: $FILE"
             exit 1
           fi
 
-          node -e "
-          const fs=require('fs');
-          const f=process.argv[1];
-          const x=JSON.parse(fs.readFileSync(f,'utf8'));
-          if(Number(x.day)!==Number(process.argv[2])) throw new Error('Day mismatch');
-          if(!x.lesson) throw new Error('Missing lesson');
-          if(!Array.isArray(x.examples)||x.examples.length<2) throw new Error('Missing examples');
-          if(!Array.isArray(x.mcqs)||x.mcqs.length<5) throw new Error('Missing MCQs');
-          x.mcqs.forEach((m,i)=>{
-            if(!Array.isArray(m.options)||m.options.length!==4) throw new Error('MCQ '+(i+1)+' must have 4 options');
-            if(!m.options.includes(m.answer)) throw new Error('MCQ '+(i+1)+' answer mismatch');
-            if(!m.explanation) throw new Error('MCQ '+(i+1)+' explanation missing');
+          node - "$FILE" "$DAY" <<'NODE'
+          const fs = require("fs");
+
+          const file = process.argv[2];
+          const expectedDay = Number(process.argv[3]);
+
+          const x = JSON.parse(
+            fs.readFileSync(file, "utf8")
+          );
+
+          function fail(message) {
+            throw new Error(message);
+          }
+
+          if (!x || typeof x !== "object") {
+            fail("Generated JSON is not an object");
+          }
+
+          if (Number(x.day) !== expectedDay) {
+            fail("Day mismatch");
+          }
+
+          const requiredStrings = [
+            "title",
+            "stage",
+            "focus",
+            "lesson",
+            "why_it_matters",
+            "common_misunderstanding",
+            "reflection"
+          ];
+
+          for (const field of requiredStrings) {
+            if (
+              typeof x[field] !== "string" ||
+              x[field].trim() === ""
+            ) {
+              fail(`Missing or empty field: ${field}`);
+            }
+          }
+
+          if (x.lesson.trim().length < 500) {
+            fail("Lesson is too short");
+          }
+
+          if (
+            !Array.isArray(x.examples) ||
+            x.examples.length < 2
+          ) {
+            fail("Missing examples");
+          }
+
+          if (
+            !Array.isArray(x.mcqs) ||
+            x.mcqs.length !== 5
+          ) {
+            fail("Exactly 5 MCQs are required");
+          }
+
+          x.mcqs.forEach((m, i) => {
+
+            if (
+              !m ||
+              typeof m.question !== "string" ||
+              !Array.isArray(m.options) ||
+              m.options.length !== 4 ||
+              typeof m.answer !== "string" ||
+              typeof m.explanation !== "string"
+            ) {
+              fail(`Invalid MCQ ${i + 1}`);
+            }
+
+            const uniqueOptions =
+              new Set(m.options);
+
+            if (uniqueOptions.size !== 4) {
+              fail(
+                `MCQ ${i + 1} has duplicate options`
+              );
+            }
+
+            if (!m.options.includes(m.answer)) {
+              fail(
+                `MCQ ${i + 1} answer mismatch`
+              );
+            }
+
+            if (!m.explanation.trim()) {
+              fail(
+                `MCQ ${i + 1} explanation missing`
+              );
+            }
           });
-          console.log('JSON verification passed:',f);
-          " "$FILE" "$DAY"
+
+          if (
+            !x.constitutional_reference ||
+            typeof x.constitutional_reference !== "object"
+          ) {
+            fail(
+              "Missing constitutional_reference"
+            );
+          }
+
+          if (
+            !Array.isArray(
+              x.constitutional_reference.articles
+            ) ||
+            !Array.isArray(
+              x.constitutional_reference.parts
+            ) ||
+            !Array.isArray(
+              x.constitutional_reference.references
+            )
+          ) {
+            fail(
+              "Invalid constitutional_reference"
+            );
+          }
+
+          if (
+            !x.source_metadata ||
+            !Array.isArray(
+              x.source_metadata.source_layers
+            )
+          ) {
+            fail(
+              "Missing source_metadata"
+            );
+          }
+
+          console.log(
+            "JSON verification passed:",
+            file
+          );
+
+          console.log(
+            "Day:",
+            x.day
+          );
+
+          console.log(
+            "MCQs:",
+            x.mcqs.length
+          );
+
+          console.log(
+            "Source layers:",
+            x.source_metadata.source_layers.join(", ")
+          );
+          NODE
+
+
+      # ============================================================
+      # COMMIT DAILY JSON
+      # ============================================================
 
       - name: Commit Daily JSON
         shell: bash
         run: |
+          set -euo pipefail
+
           DAY="${{ steps.day.outputs.day }}"
           FILE="data/day-$(printf '%03d' "$DAY").json"
 
@@ -101,5 +300,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Generate Constitution 365 Day $DAY"
+          git commit \
+            -m "Generate Constitution 365 Day $DAY"
+
           git push
