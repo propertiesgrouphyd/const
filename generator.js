@@ -389,33 +389,6 @@ function validateSourceMap() {
    DETERMINE REQUIRED SOURCE LAYERS
 ========================================================================== */
 
-/*
-  ROUTING
-
-  constitutional
-      -> constitutional only
-
-  conceptual
-      -> constitutional only
-
-  historical
-      -> constitutional + historical
-
-  statutory
-      -> constitutional + legal
-
-  judicial
-      -> constitutional + judicial
-
-  mixed
-      -> constitutional +
-         explicitly declared additional_sources +
-         actual day-level source registry mappings
-
-  A mixed day does NOT automatically require
-  every possible source layer.
-*/
-
 function determineRequiredLayers() {
   const layers = [
     "constitutional"
@@ -1661,42 +1634,113 @@ If any answer is NO, rewrite that MCQ before returning the JSON.
 
 
 --------------------------------------------------
-LANGUAGE
+STRICT TELUGU-ONLY LANGUAGE
 --------------------------------------------------
 
-The lesson content must be natural Telugu.
+THIS IS A TELUGU-ONLY EDUCATIONAL PROGRAM.
+
+ALL LEARNER-FACING CONTENT MUST BE WRITTEN
+COMPLETELY IN TELUGU SCRIPT.
+
+The following fields MUST contain Telugu-only content:
+
+- title
+- stage
+- focus
+- lesson
+- every example
+- why_it_matters
+- common_misunderstanding
+- every MCQ question
+- every MCQ option
+- every MCQ answer
+- every MCQ explanation
+- reflection
+
+ABSOLUTELY NO ENGLISH ALPHABET LETTERS ARE ALLOWED
+IN ANY OF THESE FIELDS.
+
+DO NOT USE A-Z.
+
+DO NOT USE a-z.
+
+DO NOT use English words inside Telugu sentences.
+
+DO NOT use English abbreviations.
+
+DO NOT use English technical terms.
+
+DO NOT use English legal terminology.
+
+DO NOT use English proper names inside learner-facing content.
+
+DO NOT mix Telugu and English in the same sentence.
+
+DO NOT write a Telugu sentence and insert an English word into it.
+
+DO NOT write English words merely because they are commonly used in Indian legal or educational language.
+
+If a concept can be expressed in Telugu, it MUST be expressed in Telugu.
+
+If a source contains an English proper name, understand the source,
+but do NOT copy that English name into learner-facing content.
+
+Write the learner-facing explanation entirely in Telugu.
+
+The only place where source-provided English identifiers may remain
+is in authoritative machine-controlled metadata outside the learner-facing
+content fields.
+
+The learner-facing fields themselves must contain NO English letters.
+
+The learner-facing fields must also contain NO Devanagari,
+Hindi, Kannada, Tamil, Malayalam, Bengali, Gujarati, Gurmukhi,
+Odia or any other non-Telugu writing system.
 
 Use Telugu script consistently.
 
-DO NOT use:
+Before returning JSON, inspect every character in:
 
-- Chinese characters
-- Japanese characters
-- Korean characters
-- Devanagari characters
-- Bengali characters
-- Gujarati characters
-- Gurmukhi characters
-- Kannada characters
-- Malayalam characters
-- Tamil characters
-- Arabic characters
-- Hebrew characters
-- Cyrillic characters
-- Greek characters
+title
+stage
+focus
+lesson
+examples
+why_it_matters
+common_misunderstanding
+all MCQ questions
+all MCQ options
+all MCQ answers
+all MCQ explanations
+reflection
 
-Do not accidentally mix another Indian or foreign script into Telugu.
+If ANY English alphabet character appears in any of those fields,
+rewrite the affected field before returning the JSON.
 
-Do not use transliterated Telugu when natural Telugu is available.
 
-English may be used only for an unavoidable official name,
-technical term, abbreviation, or proper noun when genuinely necessary.
+--------------------------------------------------
+REFLECTION
+--------------------------------------------------
 
-Do not randomly mix English into Telugu sentences.
+The reflection must be a meaningful real-life question
+that an ordinary citizen can think about.
 
-Before returning the answer, inspect every lesson,
-example, MCQ, answer, explanation and reflection for
-foreign-script contamination.
+The reflection must:
+
+- be completely in Telugu
+- contain no English letters
+- contain no foreign script
+- not mention AI
+- not mention sources
+- not mention generation
+- not mention files
+- not mention prompts
+- not mention the program internally
+- end with a question mark
+
+Do not write a statement.
+
+Write an actual reflective question.
 
 
 --------------------------------------------------
@@ -1849,7 +1893,7 @@ async function callGroq(
                 role: "system",
 
                 content:
-                  "You are an exceptionally careful Telugu constitutional educator. Use only the supplied authoritative source context. Never invent constitutional, historical, statutory, judicial or institutional facts. Never mix foreign scripts into Telugu. Return only valid JSON."
+                  "You are an exceptionally careful Telugu constitutional educator. Use only the supplied authoritative source context. Never invent constitutional, historical, statutory, judicial or institutional facts. All learner-facing content fields must contain Telugu script only. English alphabet characters are strictly forbidden in learner-facing content. Return only valid JSON."
               },
 
               {
@@ -1900,47 +1944,32 @@ async function callGroq(
    SCRIPT VALIDATION
 ========================================================================== */
 
-/*
-  Telugu Unicode block:
-  U+0C00 - U+0C7F
-
-  Allowed:
-  - Telugu
-  - ASCII letters only when unavoidable
-  - ASCII digits
-  - common punctuation
-  - whitespace
-  - common Unicode punctuation/numbers
-
-  Explicitly reject other major writing systems.
-*/
-
 const FORBIDDEN_SCRIPT_RANGES = [
-  /[\u0400-\u04FF]/, // Cyrillic
-  /[\u0370-\u03FF]/, // Greek
-  /[\u0590-\u05FF]/, // Hebrew
-  /[\u0600-\u06FF]/, // Arabic
-  /[\u0700-\u074F]/, // Syriac
-  /[\u0780-\u07BF]/, // Thaana
-  /[\u0900-\u097F]/, // Devanagari
-  /[\u0980-\u09FF]/, // Bengali
-  /[\u0A00-\u0A7F]/, // Gurmukhi
-  /[\u0A80-\u0AFF]/, // Gujarati
-  /[\u0B00-\u0B7F]/, // Odia
-  /[\u0B80-\u0BFF]/, // Tamil
-  /[\u0C80-\u0CFF]/, // Kannada
-  /[\u0D00-\u0D7F]/, // Malayalam
-  /[\u0D80-\u0DFF]/, // Sinhala
-  /[\u0E00-\u0E7F]/, // Thai
-  /[\u0E80-\u0EFF]/, // Lao
-  /[\u1000-\u109F]/, // Myanmar
-  /[\u1100-\u11FF]/, // Hangul Jamo
-  /[\u3040-\u30FF]/, // Hiragana/Katakana
-  /[\u3400-\u4DBF]/, // CJK Extension A
-  /[\u4E00-\u9FFF]/, // CJK Unified
-  /[\uAC00-\uD7AF]/, // Hangul
-  /[\uF900-\uFAFF]/, // CJK compatibility
-  /[\uFF66-\uFF9F]/  // Halfwidth Katakana
+  /[\u0400-\u04FF]/,
+  /[\u0370-\u03FF]/,
+  /[\u0590-\u05FF]/,
+  /[\u0600-\u06FF]/,
+  /[\u0700-\u074F]/,
+  /[\u0780-\u07BF]/,
+  /[\u0900-\u097F]/,
+  /[\u0980-\u09FF]/,
+  /[\u0A00-\u0A7F]/,
+  /[\u0A80-\u0AFF]/,
+  /[\u0B00-\u0B7F]/,
+  /[\u0B80-\u0BFF]/,
+  /[\u0C80-\u0CFF]/,
+  /[\u0D00-\u0D7F]/,
+  /[\u0D80-\u0DFF]/,
+  /[\u0E00-\u0E7F]/,
+  /[\u0E80-\u0EFF]/,
+  /[\u1000-\u109F]/,
+  /[\u1100-\u11FF]/,
+  /[\u3040-\u30FF]/,
+  /[\u3400-\u4DBF]/,
+  /[\u4E00-\u9FFF]/,
+  /[\uAC00-\uD7AF]/,
+  /[\uF900-\uFAFF]/,
+  /[\uFF66-\uFF9F]/
 ];
 
 
@@ -2018,6 +2047,20 @@ function validateTeluguString(
     );
   }
 
+  /*
+   * CRITICAL:
+   * Learner-facing content must contain
+   * ZERO English alphabet characters.
+   */
+
+  if (
+    /[A-Za-z]/.test(value)
+  ) {
+    errors.push(
+      `${fieldName} contains English letters`
+    );
+  }
+
   const forbidden =
     findForbiddenScripts(
       value
@@ -2031,10 +2074,6 @@ function validateTeluguString(
     );
   }
 
-  /*
-   * Detect replacement/corruption characters.
-   */
-
   if (
     value.includes("\uFFFD")
   ) {
@@ -2043,11 +2082,6 @@ function validateTeluguString(
     );
   }
 
-  /*
-   * Detect zero-width/control characters
-   * except normal whitespace.
-   */
-
   if (
     /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(
       value
@@ -2055,6 +2089,20 @@ function validateTeluguString(
   ) {
     errors.push(
       `${fieldName} contains invalid control characters`
+    );
+  }
+
+  /*
+   * Reject invisible directional / zero-width characters.
+   */
+
+  if (
+    /[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069]/.test(
+      value
+    )
+  ) {
+    errors.push(
+      `${fieldName} contains unsupported invisible Unicode characters`
     );
   }
 
@@ -2298,6 +2346,14 @@ function validateGeneratedContent(
   ) {
     throw new Error(
       "Reflection is too short"
+    );
+  }
+
+  if (
+    !x.reflection.trim().endsWith("?")
+  ) {
+    throw new Error(
+      "Reflection must be a genuine question ending with ?"
     );
   }
 
@@ -2897,7 +2953,11 @@ async function generateValidatedOutput() {
   );
 
   console.log(
-    "Foreign-script protection enabled."
+    "Strict Telugu-only learner content enabled."
+  );
+
+  console.log(
+    "English-letter rejection enabled."
   );
 
   console.log(
@@ -2930,10 +2990,6 @@ async function generateValidatedOutput() {
     }
   );
 
-  /*
-   * Write ONLY after all validation has passed.
-   */
-
   fs.writeFileSync(
     output,
     JSON.stringify(
@@ -2943,10 +2999,6 @@ async function generateValidatedOutput() {
     ) + "\n",
     "utf8"
   );
-
-  /*
-   * Re-read from disk and validate again.
-   */
 
   let written;
 
@@ -2992,6 +3044,14 @@ async function generateValidatedOutput() {
 
   console.log(
     `Sources: ${requiredLayers.join(", ")}`
+  );
+
+  console.log(
+    "Telugu-only learner content validation: PASSED"
+  );
+
+  console.log(
+    "English-letter validation: PASSED"
   );
 
   console.log(
