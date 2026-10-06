@@ -245,17 +245,6 @@ function isPlainObject(value) {
 }
 
 
-function hasOwn(
-  object,
-  key
-) {
-  return Object.prototype.hasOwnProperty.call(
-    object,
-    key
-  );
-}
-
-
 /* ==========================================================================
    DAY-LEVEL SOURCE ENTRIES
 ========================================================================== */
@@ -1687,10 +1676,6 @@ but do NOT copy that English name into learner-facing content.
 
 Write the learner-facing explanation entirely in Telugu.
 
-The only place where source-provided English identifiers may remain
-is in authoritative machine-controlled metadata outside the learner-facing
-content fields.
-
 The learner-facing fields themselves must contain NO English letters.
 
 The learner-facing fields must also contain NO Devanagari,
@@ -1797,15 +1782,27 @@ Do not invent constitutional references.
 OUTPUT
 --------------------------------------------------
 
-Return ONLY valid JSON.
+RETURN EXACTLY ONE VALID JSON OBJECT.
 
-No Markdown.
+The entire response MUST be a single JSON object.
 
-No code fences.
+Do not return any text before the JSON object.
 
-No comments.
+Do not return any text after the JSON object.
 
-No trailing commas.
+Do not use Markdown.
+
+Do not use code fences.
+
+Do not use comments.
+
+Do not use trailing commas.
+
+Do not use JSON5.
+
+All property names must use double quotes.
+
+All string values must use double quotes.
 
 Use exactly this structure:
 
@@ -1893,7 +1890,7 @@ async function callGroq(
                 role: "system",
 
                 content:
-                  "You are an exceptionally careful Telugu constitutional educator. Use only the supplied authoritative source context. Never invent constitutional, historical, statutory, judicial or institutional facts. All learner-facing content fields must contain Telugu script only. English alphabet characters are strictly forbidden in learner-facing content. Return only valid JSON."
+                  "You are an exceptionally careful Telugu constitutional educator. Use only the supplied authoritative source context. Never invent constitutional, historical, statutory, judicial or institutional facts. All learner-facing content fields must contain Telugu script only. English alphabet characters are strictly forbidden in learner-facing content. You MUST return exactly one valid JSON object. The response MUST be valid JSON. Do not return Markdown, explanations outside the JSON object, or code fences."
               },
 
               {
@@ -2091,10 +2088,6 @@ function validateTeluguString(
       `${fieldName} contains invalid control characters`
     );
   }
-
-  /*
-   * Reject invisible directional / zero-width characters.
-   */
 
   if (
     /[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069]/.test(
