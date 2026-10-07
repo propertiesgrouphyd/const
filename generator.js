@@ -917,6 +917,8 @@ Exactly one correct answer.
 
 The answer must exactly match one option.
 
+Across the 5 MCQs, distribute the correct answers across all four option positions. Every position must be used at least once. Do not place the correct answer in the same option position for all questions.
+
 Every question must be answerable from the supplied sources and lesson.
 
 Never put an unsupported legal premise inside a question.
@@ -1402,6 +1404,32 @@ function validateTeluguString(value,label){
       `${label} contains forbidden backslash characters`
     )
 }
+
+
+
+function balanceMcqAnswerPositions(x){
+  if(!x||!Array.isArray(x.mcqs)||x.mcqs.length!==5)return;
+  const targets=[0,1,2,3,Math.floor(Math.random()*4)];
+  for(let i=targets.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [targets[i],targets[j]]=[targets[j],targets[i]];
+  }
+  x.mcqs.forEach((mcq,i)=>{
+    const correct=mcq.answer;
+    const wrong=mcq.options.filter(option=>option!==correct);
+    for(let j=wrong.length-1;j>0;j--){
+      const k=Math.floor(Math.random()*(j+1));
+      [wrong[j],wrong[k]]=[wrong[k],wrong[j]];
+    }
+    const options=[];
+    let wi=0;
+    for(let position=0;position<4;position++)
+      options[position]=position===targets[i]?correct:wrong[wi++];
+    mcq.options=options;
+  });
+}
+
+
 
 function validateGeneratedContent(x){
   if(
@@ -2028,6 +2056,14 @@ function validateFinalOutput(x){
         sanitizeGeneratedObject(
           generated
         );
+
+      validateGeneratedContent(
+        generated
+      );
+
+      balanceMcqAnswerPositions(
+        generated
+      );
 
       validateGeneratedContent(
         generated
