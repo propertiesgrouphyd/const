@@ -1,8 +1,6 @@
 name: Constitution 365 Daily Generator
 
 on:
-  schedule:
-    - cron: "30 0 * * *"
 
   workflow_dispatch:
     inputs:
