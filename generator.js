@@ -883,7 +883,9 @@ If support is unclear, remove the legal conclusion or use a safe analogy.
 
 Never invent a citizen remedy, government procedure, workplace obligation, school obligation, hospital obligation or public-service rule.
 
-Provide 3-8 useful examples when possible.
+
+Provide at least 3 and no more than 8 separate, fully written examples in the JSON "examples" array. Each example must contain 20-2500 characters. Never return an empty examples array. If the supplied sources do not support multiple legal situations, use safe everyday analogies that explain the concept without inventing legal facts or legal consequences.
+
 
 If the source does not support multiple legal situations, use safe analogies rather than inventing facts.
 
@@ -1394,10 +1396,16 @@ function validateTeluguString(value,label){
       `${label} contains control characters`
     );
 
-  if(/[A-Za-z]/.test(text))
-    throw new Error(
-      `${label} contains English alphabet characters`
+
+    const latinMatch = text.match(
+      /[^\s.!?।,;:()[\]{}"“”‘’]*[A-Za-z][^\s.!?।,;:()[\]{}"“”‘’]*/u
     );
+
+    if (latinMatch)
+      throw new Error(
+        `${label} contains English alphabet characters; rewrite this exact text in Telugu: "${latinMatch[0].slice(0, 100)}"`
+      );
+
 
   if(/\\/u.test(text))
     throw new Error(
@@ -2116,11 +2124,38 @@ function validateFinalOutput(x){
         continue
       }
 
-      feedback=
-        `The previous generated JSON failed validation with this exact error: ${error.message}. `+
-        `Fix that error in the next JSON. `+
-        `Preserve all source-grounded facts and the required schema. `+
-        `Do not explain the error; output only corrected JSON.`;
+      const failureMessage = String(error.message || "");
+      let correctionInstruction = "";
+
+      if (/contains English alphabet characters/i.test(failureMessage)) {
+        const offendingMatch = failureMessage.match(
+          /rewrite this exact text in Telugu:\s*"([^"]+)"/i
+        );
+
+        correctionInstruction =
+          `Rewrite the entire invalid field in natural Telugu script. ` +
+          `Remove every English alphabet character. ` +
+          `Detected offending text: ${
+            offendingMatch ? JSON.stringify(offendingMatch[1]) : "not identified"
+          }. Check every educational field, example, MCQ question, option, answer and explanation.`;
+      } else if (/At least 3 examples are required/i.test(failureMessage)) {
+        correctionInstruction =
+          `The examples array is missing or contains fewer than 3 examples. ` +
+          `Return at least 3 and no more than 8 complete examples in the JSON examples array. ` +
+          `Each example must contain 20-2500 characters and be written in Telugu.`;
+      } else if (/Example \d+ is too short/i.test(failureMessage)) {
+        correctionInstruction =
+          `Expand the identified example to at least 20 characters in natural Telugu while keeping it accurate and relevant to the supplied sources.`;
+      } else {
+        correctionInstruction =
+          `Correct the specific validation failure described below without weakening any validation requirement.`;
+      }
+
+      feedback =
+        `The previous generated JSON failed validation: ${failureMessage}. ` +
+        `${correctionInstruction} ` +
+        `Preserve all source-grounded facts, the exact required JSON schema, and every other validation requirement. ` +
+        `Return only the complete corrected JSON object.`;
 
       if(
         attempt<MAX_GENERATION_ATTEMPTS
