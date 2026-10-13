@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "vidhwaan-state-static-v8";
+const CACHE_NAME = "vidhwaan-state-static-v9";
 
 const STATIC_ASSETS = [
   "./icons/logo.png",
