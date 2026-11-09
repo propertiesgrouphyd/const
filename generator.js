@@ -988,6 +988,60 @@ Do NOT use replacement characters.
 
 Normal Telugu punctuation, spaces, tabs and paragraph line breaks are allowed.
 
+STRICT TELUGU CONSTITUTIONAL TERMINOLOGY:
+
+Never write Part, Parts, Article, Articles, Schedule, Schedules, Chapter, Chapters, Section, Sections or Option in English in educational fields.
+
+Write Part I as భాగం ఒకటి.
+
+Write Part II as భాగం రెండు.
+
+Write Part III as భాగం మూడు.
+
+Write Part IV as భాగం నాలుగు.
+
+Write Part V as భాగం ఐదు.
+
+Write Part VI as భాగం ఆరు.
+
+Write Part VII as భాగం ఏడు.
+
+Write Part VIII as భాగం ఎనిమిది.
+
+Write Part IX as భాగం తొమ్మిది.
+
+Write Part X as భాగం పది.
+
+Write Article 1 as అధికరణం 1.
+
+Write Article 2 as అధికరణం 2.
+
+Write Article 3 as అధికరణం 3.
+
+Write Article 4 as అధికరణం 4.
+
+Write Option A as ఎంపిక ఎ.
+
+Write Option B as ఎంపిక బి.
+
+Write Option C as ఎంపిక సి.
+
+Write Option D as ఎంపిక డి.
+
+Never use Roman numerals as English labels in educational fields.
+
+Never copy English source filenames, source identifiers, English labels or English technical terms into lessons, examples, questions, answers, explanations or MCQ options.
+
+Use natural Telugu equivalents instead.
+
+Every educational field must be checked for English alphabet characters before returning JSON.
+
+If any English alphabet character is present, rewrite that entire educational field in natural Telugu before returning the JSON.
+
+Do not change the meaning of authoritative constitutional facts while rewriting.
+
+Do not translate constitutional_reference source identifiers or authoritative source metadata because these fields are restored from the original source by the application.
+
 LENGTH:
 
 Lesson 500-30000 characters.
@@ -1304,16 +1358,70 @@ function sanitizeGeneratedText(value){
   if(typeof value!=="string")
     return value;
 
-  return value
-    .normalize("NFC")
-    .replace(/parliament-constituent-assembly-material/gi,"రాజ్యాంగ సభకు సంబంధించిన ఆధారం")
-    .replace(/constituent[\s-]+assembly/gi,"రాజ్యాంగ సభ")
-    .replace(/\bconstituent\b/gi,"రాజ్యాంగ సభ")
+  const romanNumbers={
+    I:"ఒకటి",
+    II:"రెండు",
+    III:"మూడు",
+    IV:"నాలుగు",
+    V:"ఐదు",
+    VI:"ఆరు",
+    VII:"ఏడు",
+    VIII:"ఎనిమిది",
+    IX:"తొమ్మిది",
+    X:"పది"
+  };
+
+  const optionLetters={
+    A:"ఎ",
+    B:"బి",
+    C:"సి",
+    D:"డి"
+  };
+
+  let text=value.normalize("NFC");
+
+  text=text
+    .replace(
+      /parliament-constituent-assembly-material/gi,
+      "రాజ్యాంగ సభకు సంబంధించిన ఆధారం"
+    )
+    .replace(
+      /constituent[\s-]+assembly/gi,
+      "రాజ్యాంగ సభ"
+    )
+    .replace(
+      /\bconstituent\b/gi,
+      "రాజ్యాంగ సభ"
+    );
+
+  text=text.replace(
+    /\bPart\s+(VIII|VII|VI|V|IV|III|II|I|IX|X)\b/gi,
+    (_,roman)=>"భాగం "+romanNumbers[roman.toUpperCase()]
+  );
+
+  text=text
+    .replace(/\bParts?\b/gi,"భాగం")
+    .replace(/\bArticles?\b/gi,"అధికరణం")
+    .replace(/\bSchedules?\b/gi,"షెడ్యూల్")
+    .replace(/\bChapters?\b/gi,"అధ్యాయం")
+    .replace(/\bSections?\b/gi,"విభాగం");
+
+  text=text.replace(
+    /\bOption\s*([A-D])\b/gi,
+    (_,letter)=>"ఎంపిక "+optionLetters[letter.toUpperCase()]
+  );
+
+  const trimmed=text.trim();
+
+  if(romanNumbers[trimmed.toUpperCase()])
+    text=romanNumbers[trimmed.toUpperCase()];
+
+  return text
     .replace(/\uFFFD/g,"")
     .replace(/\\/g,"")
     .replace(/\u0000/g,"")
     .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g,"")
-    .trim()
+    .trim();
 }
 
 
